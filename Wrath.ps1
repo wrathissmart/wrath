@@ -24,29 +24,46 @@ Add-Type -AssemblyName WindowsBase
         Background="Transparent" ResizeMode="CanResizeWithGrip">
   <Window.Resources>
 
-    <!-- ── PILL (filled purple) ── -->
+    <!-- ── PILL (chrome + purple glow) ── -->
     <Style x:Key="Pill" TargetType="Button">
-      <Setter Property="Background"   Value="#8b5cf6"/>
-      <Setter Property="Foreground"   Value="White"/>
+      <Setter Property="Background"   Value="#1a1a1f"/>
+      <Setter Property="Foreground"   Value="#c8c8d8"/>
       <Setter Property="FontFamily"   Value="Segoe UI"/>
       <Setter Property="FontSize"     Value="12"/>
       <Setter Property="FontWeight"   Value="SemiBold"/>
       <Setter Property="Padding"      Value="24,10"/>
       <Setter Property="BorderThickness" Value="0"/>
       <Setter Property="Cursor"       Value="Hand"/>
+      <Setter Property="Effect">
+        <Setter.Value>
+          <DropShadowEffect Color="#8b5cf6" BlurRadius="0" ShadowDepth="0" Opacity="0"/>
+        </Setter.Value>
+      </Setter>
       <Setter Property="Template">
         <Setter.Value>
           <ControlTemplate TargetType="Button">
-            <Border x:Name="Bd" Background="{TemplateBinding Background}"
+            <Border x:Name="Bd"
+                    Background="{TemplateBinding Background}"
+                    BorderBrush="#3a3a4a" BorderThickness="1"
                     CornerRadius="10" Padding="{TemplateBinding Padding}">
+              <Border.Effect>
+                <DropShadowEffect x:Name="Glow" Color="#8b5cf6" BlurRadius="0" ShadowDepth="0" Opacity="0"/>
+              </Border.Effect>
               <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
             </Border>
             <ControlTemplate.Triggers>
               <Trigger Property="IsMouseOver" Value="True">
-                <Setter TargetName="Bd" Property="Background" Value="#a78bfa"/>
+                <Setter TargetName="Bd" Property="Background"    Value="#22202e"/>
+                <Setter TargetName="Bd" Property="BorderBrush"   Value="#6d4fc2"/>
+                <Setter Property="Foreground" Value="White"/>
+                <Setter TargetName="Glow" Property="BlurRadius"  Value="12"/>
+                <Setter TargetName="Glow" Property="Opacity"     Value="0.35"/>
               </Trigger>
               <Trigger Property="IsPressed" Value="True">
-                <Setter TargetName="Bd" Property="Background" Value="#7c3aed"/>
+                <Setter TargetName="Bd" Property="Background"    Value="#1d1929"/>
+                <Setter TargetName="Bd" Property="BorderBrush"   Value="#8b5cf6"/>
+                <Setter TargetName="Glow" Property="BlurRadius"  Value="18"/>
+                <Setter TargetName="Glow" Property="Opacity"     Value="0.5"/>
               </Trigger>
             </ControlTemplate.Triggers>
           </ControlTemplate>
@@ -54,10 +71,10 @@ Add-Type -AssemblyName WindowsBase
       </Setter>
     </Style>
 
-    <!-- ── GHOST (outlined) ── -->
+    <!-- ── GHOST (chrome + purple glow) ── -->
     <Style x:Key="Ghost" TargetType="Button">
       <Setter Property="Background"   Value="Transparent"/>
-      <Setter Property="Foreground"   Value="#555"/>
+      <Setter Property="Foreground"   Value="#484858"/>
       <Setter Property="FontFamily"   Value="Segoe UI"/>
       <Setter Property="FontSize"     Value="11"/>
       <Setter Property="Padding"      Value="20,8"/>
@@ -67,14 +84,20 @@ Add-Type -AssemblyName WindowsBase
         <Setter.Value>
           <ControlTemplate TargetType="Button">
             <Border x:Name="Bd" Background="Transparent"
-                    BorderBrush="#202020" BorderThickness="1"
+                    BorderBrush="#222230" BorderThickness="1"
                     CornerRadius="10" Padding="{TemplateBinding Padding}">
+              <Border.Effect>
+                <DropShadowEffect x:Name="Glow" Color="#8b5cf6" BlurRadius="0" ShadowDepth="0" Opacity="0"/>
+              </Border.Effect>
               <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
             </Border>
             <ControlTemplate.Triggers>
               <Trigger Property="IsMouseOver" Value="True">
-                <Setter TargetName="Bd" Property="BorderBrush" Value="#555"/>
-                <Setter Property="Foreground" Value="#ccc"/>
+                <Setter TargetName="Bd" Property="BorderBrush" Value="#5a4a80"/>
+                <Setter TargetName="Bd" Property="Background"  Value="#0e0c18"/>
+                <Setter Property="Foreground" Value="#9988cc"/>
+                <Setter TargetName="Glow" Property="BlurRadius" Value="10"/>
+                <Setter TargetName="Glow" Property="Opacity"    Value="0.25"/>
               </Trigger>
             </ControlTemplate.Triggers>
           </ControlTemplate>
@@ -82,10 +105,10 @@ Add-Type -AssemblyName WindowsBase
       </Setter>
     </Style>
 
-    <!-- ── OUTLINE (secondary) ── -->
+    <!-- ── OUTLINE (chrome + purple glow) ── -->
     <Style x:Key="Outline" TargetType="Button">
       <Setter Property="Background"   Value="Transparent"/>
-      <Setter Property="Foreground"   Value="#444"/>
+      <Setter Property="Foreground"   Value="#3a3a4a"/>
       <Setter Property="FontFamily"   Value="Segoe UI"/>
       <Setter Property="FontSize"     Value="11"/>
       <Setter Property="Padding"      Value="16,7"/>
@@ -95,15 +118,20 @@ Add-Type -AssemblyName WindowsBase
         <Setter.Value>
           <ControlTemplate TargetType="Button">
             <Border x:Name="Bd" Background="Transparent"
-                    BorderBrush="#1c1c1c" BorderThickness="1"
+                    BorderBrush="#1e1e28" BorderThickness="1"
                     CornerRadius="10" Padding="{TemplateBinding Padding}">
+              <Border.Effect>
+                <DropShadowEffect x:Name="Glow" Color="#8b5cf6" BlurRadius="0" ShadowDepth="0" Opacity="0"/>
+              </Border.Effect>
               <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
             </Border>
             <ControlTemplate.Triggers>
               <Trigger Property="IsMouseOver" Value="True">
-                <Setter TargetName="Bd" Property="Background" Value="#100820"/>
-                <Setter TargetName="Bd" Property="BorderBrush" Value="#8b5cf6"/>
-                <Setter Property="Foreground" Value="#a78bfa"/>
+                <Setter TargetName="Bd" Property="Background"   Value="#110e20"/>
+                <Setter TargetName="Bd" Property="BorderBrush"  Value="#7c5ce0"/>
+                <Setter Property="Foreground" Value="#a088e0"/>
+                <Setter TargetName="Glow" Property="BlurRadius" Value="12"/>
+                <Setter TargetName="Glow" Property="Opacity"    Value="0.3"/>
               </Trigger>
             </ControlTemplate.Triggers>
           </ControlTemplate>
@@ -204,10 +232,10 @@ Add-Type -AssemblyName WindowsBase
       </Setter>
     </Style>
 
-    <!-- ── DANGER BUTTON ── -->
+    <!-- ── DANGER BUTTON (chrome + red glow) ── -->
     <Style x:Key="DangerBtn" TargetType="Button">
-      <Setter Property="Background"    Value="#1a0808"/>
-      <Setter Property="Foreground"    Value="#f87171"/>
+      <Setter Property="Background"    Value="#160808"/>
+      <Setter Property="Foreground"    Value="#c06060"/>
       <Setter Property="FontFamily"    Value="Segoe UI"/>
       <Setter Property="FontSize"      Value="11"/>
       <Setter Property="FontWeight"    Value="SemiBold"/>
@@ -218,13 +246,20 @@ Add-Type -AssemblyName WindowsBase
         <Setter.Value>
           <ControlTemplate TargetType="Button">
             <Border x:Name="Bd" Background="{TemplateBinding Background}"
-                    BorderBrush="#3d1515" BorderThickness="1"
+                    BorderBrush="#2a1010" BorderThickness="1"
                     CornerRadius="10" Padding="{TemplateBinding Padding}">
+              <Border.Effect>
+                <DropShadowEffect x:Name="Glow" Color="#e05050" BlurRadius="0" ShadowDepth="0" Opacity="0"/>
+              </Border.Effect>
               <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
             </Border>
             <ControlTemplate.Triggers>
               <Trigger Property="IsMouseOver" Value="True">
-                <Setter TargetName="Bd" Property="Background" Value="#250a0a"/>
+                <Setter TargetName="Bd" Property="Background"   Value="#200c0c"/>
+                <Setter TargetName="Bd" Property="BorderBrush"  Value="#6b2020"/>
+                <Setter Property="Foreground" Value="#f87171"/>
+                <Setter TargetName="Glow" Property="BlurRadius" Value="12"/>
+                <Setter TargetName="Glow" Property="Opacity"    Value="0.3"/>
               </Trigger>
             </ControlTemplate.Triggers>
           </ControlTemplate>
@@ -308,8 +343,17 @@ Add-Type -AssemblyName WindowsBase
             </Button>
           </StackPanel>
 
+          <!-- Collapse arrow -->
+          <Border DockPanel.Dock="Bottom" Padding="10,6,10,6">
+            <Button x:Name="BtnToggleSidebar" Style="{StaticResource Nav}"
+                    HorizontalContentAlignment="Right" Padding="10,8">
+              <TextBlock x:Name="SidebarArrow" Text="&#x276E;"
+                         FontFamily="Segoe UI" FontSize="12" Foreground="#2a2a2a"/>
+            </Button>
+          </Border>
+
           <!-- Bottom watermark -->
-          <Border DockPanel.Dock="Bottom" Padding="20,14">
+          <Border DockPanel.Dock="Bottom" Padding="20,10">
             <TextBlock Text="prosettings.net data" FontFamily="Segoe UI"
                        FontSize="9" Foreground="#1a1a1a"/>
           </Border>
@@ -322,10 +366,6 @@ Add-Type -AssemblyName WindowsBase
               Background="Transparent" CornerRadius="0,14,0,0" Padding="10,0,14,0">
         <Grid VerticalAlignment="Center">
           <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-            <Button x:Name="BtnToggleSidebar" Style="{StaticResource Chrome}" Margin="0,0,10,0"
-                    ToolTip="Toggle sidebar">
-              <TextBlock x:Name="SidebarArrow" FontFamily="Segoe UI" FontSize="13" Text="&#x276E;" Foreground="#3a3a3a"/>
-            </Button>
             <TextBlock x:Name="PageTitle" Text="Optimizations"
                        FontFamily="Segoe UI" FontSize="13" FontWeight="SemiBold"
                        Foreground="#222" VerticalAlignment="Center"/>
@@ -1286,23 +1326,33 @@ function Load-Players($game) {
         $applyBtn.Margin = [System.Windows.Thickness]::new(0,10,0,0)
         $applyBtn.Padding = [System.Windows.Thickness]::new(14,8,14,8)
         $applyBtn.BorderThickness = [System.Windows.Thickness]::new(0)
-        $applyBtn.Background = [System.Windows.Media.SolidColorBrush][System.Windows.Media.ColorConverter]::ConvertFromString("#8b5cf6")
-        $applyBtn.Foreground = [System.Windows.Media.Brushes]::White
+        $applyBtn.Background = [System.Windows.Media.SolidColorBrush][System.Windows.Media.ColorConverter]::ConvertFromString("#1a1a1f")
+        $applyBtn.Foreground = [System.Windows.Media.SolidColorBrush][System.Windows.Media.ColorConverter]::ConvertFromString("#c8c8d8")
         $applyBtn.Tag = $p
 
         [xml]$applyXaml = @'
 <ControlTemplate xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                  TargetType="Button">
   <Border x:Name="Bd" Background="{TemplateBinding Background}"
+          BorderBrush="#3a3a4a" BorderThickness="1"
           CornerRadius="10" Padding="{TemplateBinding Padding}">
+    <Border.Effect>
+      <DropShadowEffect x:Name="Glow" Color="#8b5cf6" BlurRadius="0" ShadowDepth="0" Opacity="0"/>
+    </Border.Effect>
     <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
   </Border>
   <ControlTemplate.Triggers>
     <Trigger Property="IsMouseOver" Value="True">
-      <Setter TargetName="Bd" Property="Background" Value="#a78bfa"/>
+      <Setter TargetName="Bd" Property="Background"   Value="#22202e"/>
+      <Setter TargetName="Bd" Property="BorderBrush"  Value="#6d4fc2"/>
+      <Setter TargetName="Glow" Property="BlurRadius" Value="12"/>
+      <Setter TargetName="Glow" Property="Opacity"    Value="0.35"/>
     </Trigger>
     <Trigger Property="IsPressed" Value="True">
-      <Setter TargetName="Bd" Property="Background" Value="#7c3aed"/>
+      <Setter TargetName="Bd" Property="Background"   Value="#1d1929"/>
+      <Setter TargetName="Bd" Property="BorderBrush"  Value="#8b5cf6"/>
+      <Setter TargetName="Glow" Property="BlurRadius" Value="18"/>
+      <Setter TargetName="Glow" Property="Opacity"    Value="0.5"/>
     </Trigger>
   </ControlTemplate.Triggers>
 </ControlTemplate>
@@ -1429,8 +1479,8 @@ $SidebarBorder = gn "SidebarBorder"
 function Toggle-Sidebar {
     # Use DispatcherTimer to animate sidebar width smoothly
     $script:SidebarAnimStep  = 0
-    $script:SidebarAnimSteps = 18
-    $script:SidebarAnimInterval = 12
+    $script:SidebarAnimSteps = 28
+    $script:SidebarAnimInterval = 16
 
     if ($script:SidebarOpen) {
         $script:SidebarAnimFrom = 210; $script:SidebarAnimTo = 0
