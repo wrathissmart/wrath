@@ -41,24 +41,17 @@ Add-Type -AssemblyName WindowsBase
                     Background="{TemplateBinding Background}"
                     BorderBrush="#3a3a4a" BorderThickness="1"
                     CornerRadius="10" Padding="{TemplateBinding Padding}">
-              <Border.Effect>
-                <DropShadowEffect x:Name="Glow" Color="#8b5cf6" BlurRadius="0" ShadowDepth="0" Opacity="0"/>
-              </Border.Effect>
               <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
             </Border>
             <ControlTemplate.Triggers>
               <Trigger Property="IsMouseOver" Value="True">
-                <Setter TargetName="Bd" Property="Background"    Value="#22202e"/>
-                <Setter TargetName="Bd" Property="BorderBrush"   Value="#6d4fc2"/>
+                <Setter TargetName="Bd" Property="Background"  Value="#22202e"/>
+                <Setter TargetName="Bd" Property="BorderBrush" Value="#6d4fc2"/>
                 <Setter Property="Foreground" Value="White"/>
-                <Setter TargetName="Glow" Property="BlurRadius"  Value="12"/>
-                <Setter TargetName="Glow" Property="Opacity"     Value="0.35"/>
               </Trigger>
               <Trigger Property="IsPressed" Value="True">
-                <Setter TargetName="Bd" Property="Background"    Value="#1d1929"/>
-                <Setter TargetName="Bd" Property="BorderBrush"   Value="#8b5cf6"/>
-                <Setter TargetName="Glow" Property="BlurRadius"  Value="18"/>
-                <Setter TargetName="Glow" Property="Opacity"     Value="0.5"/>
+                <Setter TargetName="Bd" Property="Background"  Value="#1d1929"/>
+                <Setter TargetName="Bd" Property="BorderBrush" Value="#8b5cf6"/>
               </Trigger>
             </ControlTemplate.Triggers>
           </ControlTemplate>
@@ -81,9 +74,6 @@ Add-Type -AssemblyName WindowsBase
             <Border x:Name="Bd" Background="Transparent"
                     BorderBrush="#222230" BorderThickness="1"
                     CornerRadius="10" Padding="{TemplateBinding Padding}">
-              <Border.Effect>
-                <DropShadowEffect x:Name="Glow" Color="#8b5cf6" BlurRadius="0" ShadowDepth="0" Opacity="0"/>
-              </Border.Effect>
               <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
             </Border>
             <ControlTemplate.Triggers>
@@ -91,8 +81,6 @@ Add-Type -AssemblyName WindowsBase
                 <Setter TargetName="Bd" Property="BorderBrush" Value="#5a4a80"/>
                 <Setter TargetName="Bd" Property="Background"  Value="#0e0c18"/>
                 <Setter Property="Foreground" Value="#9988cc"/>
-                <Setter TargetName="Glow" Property="BlurRadius" Value="10"/>
-                <Setter TargetName="Glow" Property="Opacity"    Value="0.25"/>
               </Trigger>
             </ControlTemplate.Triggers>
           </ControlTemplate>
@@ -115,18 +103,13 @@ Add-Type -AssemblyName WindowsBase
             <Border x:Name="Bd" Background="Transparent"
                     BorderBrush="#1e1e28" BorderThickness="1"
                     CornerRadius="10" Padding="{TemplateBinding Padding}">
-              <Border.Effect>
-                <DropShadowEffect x:Name="Glow" Color="#8b5cf6" BlurRadius="0" ShadowDepth="0" Opacity="0"/>
-              </Border.Effect>
               <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
             </Border>
             <ControlTemplate.Triggers>
               <Trigger Property="IsMouseOver" Value="True">
-                <Setter TargetName="Bd" Property="Background"   Value="#110e20"/>
-                <Setter TargetName="Bd" Property="BorderBrush"  Value="#7c5ce0"/>
+                <Setter TargetName="Bd" Property="Background"  Value="#110e20"/>
+                <Setter TargetName="Bd" Property="BorderBrush" Value="#7c5ce0"/>
                 <Setter Property="Foreground" Value="#a088e0"/>
-                <Setter TargetName="Glow" Property="BlurRadius" Value="12"/>
-                <Setter TargetName="Glow" Property="Opacity"    Value="0.3"/>
               </Trigger>
             </ControlTemplate.Triggers>
           </ControlTemplate>
@@ -243,18 +226,13 @@ Add-Type -AssemblyName WindowsBase
             <Border x:Name="Bd" Background="{TemplateBinding Background}"
                     BorderBrush="#2a1010" BorderThickness="1"
                     CornerRadius="10" Padding="{TemplateBinding Padding}">
-              <Border.Effect>
-                <DropShadowEffect x:Name="Glow" Color="#e05050" BlurRadius="0" ShadowDepth="0" Opacity="0"/>
-              </Border.Effect>
               <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
             </Border>
             <ControlTemplate.Triggers>
               <Trigger Property="IsMouseOver" Value="True">
-                <Setter TargetName="Bd" Property="Background"   Value="#200c0c"/>
-                <Setter TargetName="Bd" Property="BorderBrush"  Value="#6b2020"/>
+                <Setter TargetName="Bd" Property="Background"  Value="#200c0c"/>
+                <Setter TargetName="Bd" Property="BorderBrush" Value="#6b2020"/>
                 <Setter Property="Foreground" Value="#f87171"/>
-                <Setter TargetName="Glow" Property="BlurRadius" Value="12"/>
-                <Setter TargetName="Glow" Property="Opacity"    Value="0.3"/>
               </Trigger>
             </ControlTemplate.Triggers>
           </ControlTemplate>
@@ -1331,23 +1309,16 @@ function Load-Players($game) {
   <Border x:Name="Bd" Background="{TemplateBinding Background}"
           BorderBrush="#3a3a4a" BorderThickness="1"
           CornerRadius="10" Padding="{TemplateBinding Padding}">
-    <Border.Effect>
-      <DropShadowEffect x:Name="Glow" Color="#8b5cf6" BlurRadius="0" ShadowDepth="0" Opacity="0"/>
-    </Border.Effect>
     <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
   </Border>
   <ControlTemplate.Triggers>
     <Trigger Property="IsMouseOver" Value="True">
-      <Setter TargetName="Bd" Property="Background"   Value="#22202e"/>
-      <Setter TargetName="Bd" Property="BorderBrush"  Value="#6d4fc2"/>
-      <Setter TargetName="Glow" Property="BlurRadius" Value="12"/>
-      <Setter TargetName="Glow" Property="Opacity"    Value="0.35"/>
+      <Setter TargetName="Bd" Property="Background"  Value="#22202e"/>
+      <Setter TargetName="Bd" Property="BorderBrush" Value="#6d4fc2"/>
     </Trigger>
     <Trigger Property="IsPressed" Value="True">
-      <Setter TargetName="Bd" Property="Background"   Value="#1d1929"/>
-      <Setter TargetName="Bd" Property="BorderBrush"  Value="#8b5cf6"/>
-      <Setter TargetName="Glow" Property="BlurRadius" Value="18"/>
-      <Setter TargetName="Glow" Property="Opacity"    Value="0.5"/>
+      <Setter TargetName="Bd" Property="Background"  Value="#1d1929"/>
+      <Setter TargetName="Bd" Property="BorderBrush" Value="#8b5cf6"/>
     </Trigger>
   </ControlTemplate.Triggers>
 </ControlTemplate>
@@ -1461,6 +1432,29 @@ function Append-Log($msg, $col="#282828") {
 # ══════════════════════════════════════════════════════════════
 #  EVENTS — WINDOW CHROME
 # ══════════════════════════════════════════════════════════════
+
+# ── Subtle purple glow on hover via PS events (XAML effects unsupported in triggers) ──
+function Add-Glow($btn, [string]$color="#8b5cf6", [double]$blur=14, [double]$opacity=0.28) {
+    $glowOn  = New-Object System.Windows.Media.Effects.DropShadowEffect
+    $glowOn.Color      = [System.Windows.Media.ColorConverter]::ConvertFromString($color)
+    $glowOn.BlurRadius = $blur
+    $glowOn.ShadowDepth = 0
+    $glowOn.Opacity    = $opacity
+    $btn.Add_MouseEnter({ param($s,$e) $s.Effect = $glowOn })
+    $btn.Add_MouseLeave({ param($s,$e) $s.Effect = $null })
+}
+
+# Apply glow to all chrome-style action buttons
+foreach ($bname in @("BtnDelay","BtnDebloat","BtnGame","BtnRestore",
+                     "DelayAll","DelayRec","DelayClear","DelayBack",
+                     "DebloatAll","DebloatRec","DebloatClear","DebloatBack",
+                     "GameAll","GameRec","GameClear","GameBack",
+                     "BtnApply","StgRestore","StgClearAll")) {
+    $b = gn $bname
+    if ($b) { Add-Glow $b }
+}
+# Red glow for danger buttons
+$dstg = gn "StgClearAll"; if ($dstg) { Add-Glow $dstg "#e05050" 12 0.25 }
 
 (gn "TitleBar").Add_MouseLeftButtonDown({ $Window.DragMove() })
 (gn "BtnMin").Add_Click({ $Window.WindowState = "Minimized" })
