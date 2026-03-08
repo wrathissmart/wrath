@@ -1,343 +1,593 @@
-#Requires -RunAsAdministrator
-# ============================================================
-#  WRATH — Windows Optimizer
-#  Paste into an elevated PowerShell window to launch:
-#  irm <your_raw_github_url> | iex
-# ============================================================
+# ══════════════════════════════════════════════════════════════
+#  WRATH v2  —  Windows Optimizer
+#  Usage: irm <raw_github_url> | iex
+#  Run as Administrator in PowerShell 5+
+# ══════════════════════════════════════════════════════════════
+
+if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
+    Write-Host "`n  Wrath requires Administrator privileges." -ForegroundColor Red
+    Write-Host "  Right-click PowerShell and choose 'Run as Administrator', then try again.`n" -ForegroundColor Yellow
+    exit
+}
 
 Add-Type -AssemblyName PresentationFramework
 Add-Type -AssemblyName PresentationCore
 Add-Type -AssemblyName WindowsBase
 
 [xml]$XAML = @'
-<Window
-    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    Title="Wrath" Height="680" Width="960"
-    MinHeight="520" MinWidth="700"
-    WindowStartupLocation="CenterScreen"
-    WindowStyle="None" AllowsTransparency="True"
-    Background="Transparent" ResizeMode="CanResizeWithGrip">
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Wrath" Height="740" Width="1180"
+        MinHeight="600" MinWidth="900"
+        WindowStartupLocation="CenterScreen"
+        WindowStyle="None" AllowsTransparency="True"
+        Background="Transparent" ResizeMode="CanResizeWithGrip">
+  <Window.Resources>
 
-<Window.Resources>
+    <!-- ── PILL (filled purple) ── -->
+    <Style x:Key="Pill" TargetType="Button">
+      <Setter Property="Background"   Value="#8b5cf6"/>
+      <Setter Property="Foreground"   Value="White"/>
+      <Setter Property="FontFamily"   Value="Segoe UI"/>
+      <Setter Property="FontSize"     Value="12"/>
+      <Setter Property="FontWeight"   Value="SemiBold"/>
+      <Setter Property="Padding"      Value="24,10"/>
+      <Setter Property="BorderThickness" Value="0"/>
+      <Setter Property="Cursor"       Value="Hand"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="Button">
+            <Border x:Name="Bd" Background="{TemplateBinding Background}"
+                    CornerRadius="999" Padding="{TemplateBinding Padding}">
+              <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True">
+                <Setter TargetName="Bd" Property="Background" Value="#a78bfa"/>
+              </Trigger>
+              <Trigger Property="IsPressed" Value="True">
+                <Setter TargetName="Bd" Property="Background" Value="#7c3aed"/>
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
 
-   <!-- Purple filled pill -->
-<Style x:Key="PillBtn" TargetType="Button">
-  <Setter Property="Background" Value="#9b6bff"/>
-  <Setter Property="Foreground" Value="White"/>
-  <Setter Property="FontFamily" Value="Segoe UI Semibold"/>
-  <Setter Property="FontSize" Value="14"/>
-  <Setter Property="Padding" Value="32,14"/>
-  <Setter Property="BorderThickness" Value="0"/>
-  <Setter Property="Cursor" Value="Hand"/>
-  <Setter Property="Template">
-    <Setter.Value>
-      <ControlTemplate TargetType="Button">
-        <Border x:Name="Bd"
-                Background="{TemplateBinding Background}"
-                CornerRadius="24"
-                Padding="{TemplateBinding Padding}">
-          <ContentPresenter HorizontalAlignment="Center"
-                            VerticalAlignment="Center"/>
-        </Border>
-        <ControlTemplate.Triggers>
-          <Trigger Property="IsMouseOver" Value="True">
-            <Setter TargetName="Bd" Property="Background" Value="#b48cff"/>
-          </Trigger>
-          <Trigger Property="IsPressed" Value="True">
-            <Setter TargetName="Bd" Property="Background" Value="#7f3df5"/>
-          </Trigger>
-        </ControlTemplate.Triggers>
-      </ControlTemplate>
-    </Setter.Value>
-  </Setter>
-</Style>
+    <!-- ── GHOST (outlined) ── -->
+    <Style x:Key="Ghost" TargetType="Button">
+      <Setter Property="Background"   Value="Transparent"/>
+      <Setter Property="Foreground"   Value="#555"/>
+      <Setter Property="FontFamily"   Value="Segoe UI"/>
+      <Setter Property="FontSize"     Value="11"/>
+      <Setter Property="Padding"      Value="20,8"/>
+      <Setter Property="BorderThickness" Value="0"/>
+      <Setter Property="Cursor"       Value="Hand"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="Button">
+            <Border x:Name="Bd" Background="Transparent"
+                    BorderBrush="#202020" BorderThickness="1"
+                    CornerRadius="999" Padding="{TemplateBinding Padding}">
+              <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True">
+                <Setter TargetName="Bd" Property="BorderBrush" Value="#555"/>
+                <Setter Property="Foreground" Value="#ccc"/>
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
 
-<!-- Ghost outlined pill -->
-<Style x:Key="GhostBtn" TargetType="Button">
-  <Setter Property="Background" Value="Transparent"/>
-  <Setter Property="Foreground" Value="#bbbbbb"/>
-  <Setter Property="FontFamily" Value="Segoe UI"/>
-  <Setter Property="FontSize" Value="13"/>
-  <Setter Property="Padding" Value="28,12"/>
-  <Setter Property="BorderThickness" Value="0"/>
-  <Setter Property="Cursor" Value="Hand"/>
-  <Setter Property="Template">
-    <Setter.Value>
-      <ControlTemplate TargetType="Button">
-        <Border x:Name="Bd"
-                Background="Transparent"
-                BorderBrush="#333333"
-                BorderThickness="1.4"
-                CornerRadius="24"
-                Padding="{TemplateBinding Padding}">
-          <ContentPresenter HorizontalAlignment="Center"
-                            VerticalAlignment="Center"/>
-        </Border>
-        <ControlTemplate.Triggers>
-          <Trigger Property="IsMouseOver" Value="True">
-            <Setter TargetName="Bd" Property="BorderBrush" Value="#9b6bff"/>
-            <Setter Property="Foreground" Value="#d9c6ff"/>
-          </Trigger>
-        </ControlTemplate.Triggers>
-      </ControlTemplate>
-    </Setter.Value>
-  </Setter>
-</Style>
+    <!-- ── OUTLINE (secondary) ── -->
+    <Style x:Key="Outline" TargetType="Button">
+      <Setter Property="Background"   Value="Transparent"/>
+      <Setter Property="Foreground"   Value="#444"/>
+      <Setter Property="FontFamily"   Value="Segoe UI"/>
+      <Setter Property="FontSize"     Value="11"/>
+      <Setter Property="Padding"      Value="16,7"/>
+      <Setter Property="BorderThickness" Value="0"/>
+      <Setter Property="Cursor"       Value="Hand"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="Button">
+            <Border x:Name="Bd" Background="Transparent"
+                    BorderBrush="#1c1c1c" BorderThickness="1"
+                    CornerRadius="999" Padding="{TemplateBinding Padding}">
+              <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True">
+                <Setter TargetName="Bd" Property="Background" Value="#100820"/>
+                <Setter TargetName="Bd" Property="BorderBrush" Value="#8b5cf6"/>
+                <Setter Property="Foreground" Value="#a78bfa"/>
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
 
-<!-- Outline pill (secondary actions) -->
-<Style x:Key="OutlineBtn" TargetType="Button">
-  <Setter Property="Background" Value="Transparent"/>
-  <Setter Property="Foreground" Value="#aaaaaa"/>
-  <Setter Property="FontFamily" Value="Segoe UI"/>
-  <Setter Property="FontSize" Value="13"/>
-  <Setter Property="Padding" Value="26,12"/>
-  <Setter Property="BorderThickness" Value="0"/>
-  <Setter Property="Cursor" Value="Hand"/>
-  <Setter Property="Template">
-    <Setter.Value>
-      <ControlTemplate TargetType="Button">
-        <Border x:Name="Bd"
-                Background="Transparent"
-                BorderBrush="#2a2a2a"
-                BorderThickness="1.4"
-                CornerRadius="24"
-                Padding="{TemplateBinding Padding}">
-          <ContentPresenter HorizontalAlignment="Center"
-                            VerticalAlignment="Center"/>
-        </Border>
-        <ControlTemplate.Triggers>
-          <Trigger Property="IsMouseOver" Value="True">
-            <Setter TargetName="Bd" Property="Background" Value="#120a1f"/>
-            <Setter TargetName="Bd" Property="BorderBrush" Value="#9b6bff"/>
-            <Setter Property="Foreground" Value="#c7a8ff"/>
-          </Trigger>
-        </ControlTemplate.Triggers>
-      </ControlTemplate>
-    </Setter.Value>
-  </Setter>
-</Style>
+    <!-- ── NAV BUTTON (sidebar) ── -->
+    <Style x:Key="Nav" TargetType="Button">
+      <Setter Property="Background"            Value="Transparent"/>
+      <Setter Property="Foreground"            Value="#3c3c3c"/>
+      <Setter Property="FontFamily"            Value="Segoe UI"/>
+      <Setter Property="FontSize"              Value="13"/>
+      <Setter Property="HorizontalContentAlignment" Value="Left"/>
+      <Setter Property="Padding"               Value="14,10"/>
+      <Setter Property="BorderThickness"       Value="0"/>
+      <Setter Property="Cursor"                Value="Hand"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="Button">
+            <Border x:Name="Bd" Background="Transparent"
+                    CornerRadius="8" Padding="{TemplateBinding Padding}">
+              <ContentPresenter VerticalAlignment="Center"/>
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True">
+                <Setter TargetName="Bd" Property="Background" Value="#0d0d0d"/>
+                <Setter Property="Foreground" Value="#777"/>
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
 
-<!-- Window chrome buttons (min/close) -->
-<Style x:Key="ChromeBtn" TargetType="Button">
-  <Setter Property="Background" Value="Transparent"/>
-  <Setter Property="Foreground" Value="#444444"/>
-  <Setter Property="FontFamily" Value="Consolas"/>
-  <Setter Property="FontSize" Value="14"/>
-  <Setter Property="Width" Value="32"/>
-  <Setter Property="Height" Value="32"/>
-  <Setter Property="BorderThickness" Value="0"/>
-  <Setter Property="Cursor" Value="Hand"/>
-  <Setter Property="Template">
-    <Setter.Value>
-      <ControlTemplate TargetType="Button">
-        <Border x:Name="Bd" Background="Transparent" CornerRadius="999">
-          <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-        </Border>
-        <ControlTemplate.Triggers>
-          <Trigger Property="IsMouseOver" Value="True">
-            <Setter TargetName="Bd" Property="Background" Value="#1a1a1a"/>
-            <Setter Property="Foreground" Value="#bbbbbb"/>
-          </Trigger>
-        </ControlTemplate.Triggers>
-      </ControlTemplate>
-    </Setter.Value>
-  </Setter>
-</Style>
+    <!-- ── CHROME (min/close) ── -->
+    <Style x:Key="Chrome" TargetType="Button">
+      <Setter Property="Background"    Value="Transparent"/>
+      <Setter Property="Foreground"    Value="#3a3a3a"/>
+      <Setter Property="FontSize"      Value="13"/>
+      <Setter Property="Width"         Value="30"/>
+      <Setter Property="Height"        Value="30"/>
+      <Setter Property="BorderThickness" Value="0"/>
+      <Setter Property="Cursor"        Value="Hand"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="Button">
+            <Border x:Name="Bd" Background="Transparent" CornerRadius="999">
+              <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True">
+                <Setter TargetName="Bd" Property="Background" Value="#181818"/>
+                <Setter Property="Foreground" Value="#aaa"/>
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
 
-<!-- Scrollbar -->
-<Style TargetType="ScrollBar">
-  <Setter Property="Width" Value="5"/>
-  <Setter Property="Background" Value="Transparent"/>
-  <Setter Property="Template">
-    <Setter.Value>
-      <ControlTemplate TargetType="ScrollBar">
-        <Grid>
-          <Track x:Name="PART_Track" IsDirectionReversed="True">
-            <Track.Thumb>
-              <Thumb>
-                <Thumb.Template>
-                  <ControlTemplate TargetType="Thumb">
-                    <Border Background="#221540" CornerRadius="3"/>
-                  </ControlTemplate>
-                </Thumb.Template>
-              </Thumb>
-            </Track.Thumb>
-          </Track>
-        </Grid>
-      </ControlTemplate>
-    </Setter.Value>
-  </Setter>
-</Style>
+    <!-- ── GAME CARD ── -->
+    <Style x:Key="GameCard" TargetType="Button">
+      <Setter Property="Background"    Value="#0d0d0d"/>
+      <Setter Property="Foreground"    Value="#666"/>
+      <Setter Property="FontFamily"    Value="Segoe UI"/>
+      <Setter Property="FontSize"      Value="13"/>
+      <Setter Property="FontWeight"    Value="SemiBold"/>
+      <Setter Property="BorderThickness" Value="0"/>
+      <Setter Property="Cursor"        Value="Hand"/>
+      <Setter Property="Padding"       Value="0"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="Button">
+            <Border x:Name="Bd" Background="{TemplateBinding Background}"
+                    BorderBrush="#181818" BorderThickness="1"
+                    CornerRadius="12" Padding="22,20">
+              <StackPanel>
+                <TextBlock Text="{TemplateBinding Tag}" FontSize="24"
+                           Margin="0,0,0,12" HorizontalAlignment="Left"/>
+                <TextBlock Text="{TemplateBinding Content}"
+                           FontFamily="Segoe UI" FontSize="13" FontWeight="SemiBold"
+                           Foreground="{TemplateBinding Foreground}" TextWrapping="Wrap"/>
+              </StackPanel>
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True">
+                <Setter TargetName="Bd" Property="Background" Value="#120a22"/>
+                <Setter TargetName="Bd" Property="BorderBrush" Value="#341870"/>
+                <Setter Property="Foreground" Value="#c4b5fd"/>
+              </Trigger>
+              <Trigger Property="IsPressed" Value="True">
+                <Setter TargetName="Bd" Property="Background" Value="#180d2e"/>
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
 
-</Window.Resources>
+    <!-- ── DANGER BUTTON ── -->
+    <Style x:Key="DangerBtn" TargetType="Button">
+      <Setter Property="Background"    Value="#1a0808"/>
+      <Setter Property="Foreground"    Value="#f87171"/>
+      <Setter Property="FontFamily"    Value="Segoe UI"/>
+      <Setter Property="FontSize"      Value="11"/>
+      <Setter Property="FontWeight"    Value="SemiBold"/>
+      <Setter Property="Padding"       Value="16,8"/>
+      <Setter Property="BorderThickness" Value="0"/>
+      <Setter Property="Cursor"        Value="Hand"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="Button">
+            <Border x:Name="Bd" Background="{TemplateBinding Background}"
+                    BorderBrush="#3d1515" BorderThickness="1"
+                    CornerRadius="999" Padding="{TemplateBinding Padding}">
+              <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True">
+                <Setter TargetName="Bd" Property="Background" Value="#250a0a"/>
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
 
+    <!-- ── SCROLLBAR ── -->
+    <Style TargetType="ScrollBar">
+      <Setter Property="Width"  Value="4"/>
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="ScrollBar">
+            <Grid>
+              <Track x:Name="PART_Track" IsDirectionReversed="True">
+                <Track.Thumb>
+                  <Thumb>
+                    <Thumb.Template>
+                      <ControlTemplate TargetType="Thumb">
+                        <Border Background="#1e1040" CornerRadius="2"/>
+                      </ControlTemplate>
+                    </Thumb.Template>
+                  </Thumb>
+                </Track.Thumb>
+              </Track>
+            </Grid>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
 
-  <!-- Root border gives the window shape + border -->
-  <Border Background="#080808" CornerRadius="14"
-          BorderBrush="#1e1e1e" BorderThickness="1">
+  </Window.Resources>
+
+  <Border Background="#070707" CornerRadius="14" BorderBrush="#161616" BorderThickness="1">
     <Grid>
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="210"/>
+        <ColumnDefinition Width="*"/>
+      </Grid.ColumnDefinitions>
       <Grid.RowDefinitions>
-        <RowDefinition Height="64"/>
+        <RowDefinition Height="58"/>
         <RowDefinition Height="*"/>
         <RowDefinition Height="Auto"/>
       </Grid.RowDefinitions>
 
-      <!-- ── TITLE BAR ── -->
-      <Border Grid.Row="0" Background="Transparent"
-              CornerRadius="14,14,0,0" Padding="28,0,14,0"
-              x:Name="TitleBar">
+      <!-- ════════════════ SIDEBAR ════════════════ -->
+      <Border Grid.Column="0" Grid.RowSpan="3"
+              Background="#050505" CornerRadius="14,0,0,14"
+              BorderBrush="#111" BorderThickness="0,0,1,0">
+        <DockPanel>
+          <!-- Logo -->
+          <StackPanel DockPanel.Dock="Top" Margin="20,22,20,18">
+            <TextBlock>
+              <Run Text="Wrath" FontFamily="Georgia" FontSize="23" FontWeight="Bold" Foreground="White"/>
+              <Run Text="." FontFamily="Georgia" FontSize="23" FontWeight="Bold" Foreground="#8b5cf6"/>
+            </TextBlock>
+          </StackPanel>
+
+          <Border DockPanel.Dock="Top" Height="1" Background="#101010" Margin="0,0,0,10"/>
+
+          <!-- Nav items -->
+          <StackPanel DockPanel.Dock="Top" Margin="10,4,10,0">
+            <Button x:Name="NavOpt"     Style="{StaticResource Nav}" Margin="0,1,0,1">
+              <StackPanel Orientation="Horizontal">
+                <TextBlock Text="⚡" FontSize="12" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                <TextBlock Text="Optimizations" VerticalAlignment="Center"/>
+              </StackPanel>
+            </Button>
+            <Button x:Name="NavPro"     Style="{StaticResource Nav}" Margin="0,1,0,1">
+              <StackPanel Orientation="Horizontal">
+                <TextBlock Text="🎮" FontSize="12" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                <TextBlock Text="Pro Settings" VerticalAlignment="Center"/>
+              </StackPanel>
+            </Button>
+            <Button x:Name="NavSettings" Style="{StaticResource Nav}" Margin="0,1,0,1">
+              <StackPanel Orientation="Horizontal">
+                <TextBlock Text="⚙" FontSize="12" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                <TextBlock Text="Settings" VerticalAlignment="Center"/>
+              </StackPanel>
+            </Button>
+          </StackPanel>
+
+          <!-- Bottom watermark -->
+          <Border DockPanel.Dock="Bottom" Padding="20,14">
+            <TextBlock Text="prosettings.net data" FontFamily="Segoe UI"
+                       FontSize="9" Foreground="#1a1a1a"/>
+          </Border>
+          <FrameworkElement/>
+        </DockPanel>
+      </Border>
+
+      <!-- ════════════════ TITLE BAR ════════════════ -->
+      <Border Grid.Column="1" Grid.Row="0" x:Name="TitleBar"
+              Background="Transparent" CornerRadius="0,14,0,0" Padding="26,0,14,0">
         <Grid VerticalAlignment="Center">
-          <TextBlock VerticalAlignment="Center">
-            <Run Text="Wrath" FontFamily="Georgia" FontSize="28"
-                 FontWeight="Bold" Foreground="White"/>
-            <Run Text="." FontFamily="Georgia" FontSize="28"
-                 FontWeight="Bold" Foreground="#8b5cf6"/>
-          </TextBlock>
-          <StackPanel Orientation="Horizontal" HorizontalAlignment="Right"
-            VerticalAlignment="Center">
-    <Button x:Name="BtnMin" Content="&#x2212;" Style="{StaticResource ChromeBtn}"
-            Margin="0,0,4,0"/>
-
-    <Button x:Name="BtnMax" Content="&#x25A1;" Style="{StaticResource ChromeBtn}"
-            Margin="0,0,4,0"/>
-
-    <Button x:Name="BtnClose" Content="&#x2715;" Style="{StaticResource ChromeBtn}"/>
-</StackPanel>
+          <TextBlock x:Name="PageTitle" Text="Optimizations"
+                     FontFamily="Segoe UI" FontSize="13" FontWeight="SemiBold"
+                     Foreground="#222" VerticalAlignment="Center"/>
+          <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+            <Button x:Name="BtnMin"   Content="&#x2212;" Style="{StaticResource Chrome}" Margin="0,0,4,0"/>
+            <Button x:Name="BtnClose" Content="&#x2715;" Style="{StaticResource Chrome}"/>
+          </StackPanel>
         </Grid>
       </Border>
-      <Border Grid.Row="0" Height="1" VerticalAlignment="Bottom"
-              Background="#161616" Margin="0,0,0,0"/>
+      <Border Grid.Column="1" Grid.Row="0" Height="1" VerticalAlignment="Bottom" Background="#0f0f0f"/>
 
-      <!-- ── PAGES ── -->
+      <!-- ════════════════ CONTENT ════════════════ -->
+      <Grid Grid.Column="1" Grid.Row="1">
 
-      <!-- HOME -->
-      <Grid x:Name="PageHome" Grid.Row="1">
-        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center"
-                    Margin="0,-30,0,0">
-          <StackPanel Orientation="Horizontal" HorizontalAlignment="Center"
-                      Margin="0,0,0,12">
-            <Button x:Name="BtnDelay"   Content="Delay"     Style="{StaticResource PillBtn}" Margin="6,0"/>
-            <Button x:Name="BtnDebloat" Content="Debloat"   Style="{StaticResource PillBtn}" Margin="6,0"/>
-            <Button x:Name="BtnGame"    Content="Game Mode" Style="{StaticResource PillBtn}" Margin="6,0"/>
+        <!-- ── OPT HOME ── -->
+        <Grid x:Name="PgOptHome">
+          <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Margin="0,-30,0,0">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,12">
+              <Button x:Name="BtnDelay"   Content="Delay"     Style="{StaticResource Pill}" Margin="6,0"/>
+              <Button x:Name="BtnDebloat" Content="Debloat"   Style="{StaticResource Pill}" Margin="6,0"/>
+              <Button x:Name="BtnGame"    Content="Game Mode" Style="{StaticResource Pill}" Margin="6,0"/>
+            </StackPanel>
+            <Button x:Name="BtnRestore" Content="Restore Point"
+                    Style="{StaticResource Ghost}" HorizontalAlignment="Center"/>
           </StackPanel>
-          <Button x:Name="BtnRestore" Content="Restore Point"
-                  Style="{StaticResource GhostBtn}" HorizontalAlignment="Center"/>
-        </StackPanel>
-      </Grid>
+        </Grid>
 
-      <!-- DELAY -->
-      <Grid x:Name="PageDelay" Grid.Row="1" Visibility="Collapsed" Margin="28,0,14,0">
-        <Grid.RowDefinitions>
-          <RowDefinition Height="Auto"/>
-          <RowDefinition Height="Auto"/>
-          <RowDefinition Height="*"/>
-        </Grid.RowDefinitions>
-        <StackPanel Grid.Row="0" HorizontalAlignment="Center" Margin="0,24,0,18">
-          <TextBlock HorizontalAlignment="Center" Margin="0,0,0,14">
-            <Run Text="Delay" FontFamily="Georgia" FontSize="38" FontWeight="Bold" Foreground="White"/>
-            <Run Text="." FontFamily="Georgia" FontSize="38" FontWeight="Bold" Foreground="#8b5cf6"/>
-          </TextBlock>
-          <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-            <Button x:Name="DelayAll"  Content="Select All"   Style="{StaticResource PillBtn}"    Margin="5,0"/>
-            <Button x:Name="DelayRec"  Content="Recommended"  Style="{StaticResource OutlineBtn}" Margin="5,0"/>
-            <Button x:Name="DelayClear" Content="Clear"       Style="{StaticResource OutlineBtn}" Margin="5,0"/>
-            <Button x:Name="DelayBack" Content="Back"         Style="{StaticResource GhostBtn}"   Margin="5,0"/>
+        <!-- ── DELAY ── -->
+        <Grid x:Name="PgDelay" Visibility="Collapsed" Margin="26,0,12,0">
+          <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+          </Grid.RowDefinitions>
+          <StackPanel Grid.Row="0" HorizontalAlignment="Center" Margin="0,22,0,16">
+            <TextBlock HorizontalAlignment="Center" Margin="0,0,0,14">
+              <Run Text="Delay" FontFamily="Georgia" FontSize="36" FontWeight="Bold" Foreground="White"/>
+              <Run Text="." FontFamily="Georgia" FontSize="36" FontWeight="Bold" Foreground="#8b5cf6"/>
+            </TextBlock>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+              <Button x:Name="DelayAll"   Content="Select All"  Style="{StaticResource Pill}"    Margin="4,0"/>
+              <Button x:Name="DelayRec"   Content="Recommended" Style="{StaticResource Outline}"  Margin="4,0"/>
+              <Button x:Name="DelayClear" Content="Clear"       Style="{StaticResource Outline}"  Margin="4,0"/>
+              <Button x:Name="DelayBack"  Content="Back"        Style="{StaticResource Ghost}"    Margin="4,0"/>
+            </StackPanel>
           </StackPanel>
-        </StackPanel>
-        <Border Grid.Row="1" Height="1" Background="#161616" Margin="0,0,14,12"/>
-        <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" Padding="0,0,12,0">
-          <StackPanel x:Name="DelayList" Margin="0,0,0,16"/>
-        </ScrollViewer>
-      </Grid>
+          <Border Grid.Row="1" Height="1" Background="#0f0f0f" Margin="0,0,12,12"/>
+          <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" Padding="0,0,10,0">
+            <StackPanel x:Name="DelayList" Margin="0,0,0,16"/>
+          </ScrollViewer>
+        </Grid>
 
-      <!-- DEBLOAT -->
-      <Grid x:Name="PageDebloat" Grid.Row="1" Visibility="Collapsed" Margin="28,0,14,0">
-        <Grid.RowDefinitions>
-          <RowDefinition Height="Auto"/>
-          <RowDefinition Height="Auto"/>
-          <RowDefinition Height="*"/>
-        </Grid.RowDefinitions>
-        <StackPanel Grid.Row="0" HorizontalAlignment="Center" Margin="0,24,0,18">
-          <TextBlock HorizontalAlignment="Center" Margin="0,0,0,14">
-            <Run Text="Debloat" FontFamily="Georgia" FontSize="38" FontWeight="Bold" Foreground="White"/>
-            <Run Text="." FontFamily="Georgia" FontSize="38" FontWeight="Bold" Foreground="#8b5cf6"/>
-          </TextBlock>
-          <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-            <Button x:Name="DebloatAll"   Content="Select All"  Style="{StaticResource PillBtn}"    Margin="5,0"/>
-            <Button x:Name="DebloatRec"   Content="Recommended" Style="{StaticResource OutlineBtn}" Margin="5,0"/>
-            <Button x:Name="DebloatClear" Content="Clear"       Style="{StaticResource OutlineBtn}" Margin="5,0"/>
-            <Button x:Name="DebloatBack"  Content="Back"        Style="{StaticResource GhostBtn}"   Margin="5,0"/>
+        <!-- ── DEBLOAT ── -->
+        <Grid x:Name="PgDebloat" Visibility="Collapsed" Margin="26,0,12,0">
+          <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+          </Grid.RowDefinitions>
+          <StackPanel Grid.Row="0" HorizontalAlignment="Center" Margin="0,22,0,16">
+            <TextBlock HorizontalAlignment="Center" Margin="0,0,0,14">
+              <Run Text="Debloat" FontFamily="Georgia" FontSize="36" FontWeight="Bold" Foreground="White"/>
+              <Run Text="." FontFamily="Georgia" FontSize="36" FontWeight="Bold" Foreground="#8b5cf6"/>
+            </TextBlock>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+              <Button x:Name="DebloatAll"   Content="Select All"  Style="{StaticResource Pill}"    Margin="4,0"/>
+              <Button x:Name="DebloatRec"   Content="Recommended" Style="{StaticResource Outline}"  Margin="4,0"/>
+              <Button x:Name="DebloatClear" Content="Clear"       Style="{StaticResource Outline}"  Margin="4,0"/>
+              <Button x:Name="DebloatBack"  Content="Back"        Style="{StaticResource Ghost}"    Margin="4,0"/>
+            </StackPanel>
           </StackPanel>
-        </StackPanel>
-        <Border Grid.Row="1" Height="1" Background="#161616" Margin="0,0,14,12"/>
-        <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" Padding="0,0,12,0">
-          <StackPanel x:Name="DebloatList" Margin="0,0,0,16"/>
-        </ScrollViewer>
-      </Grid>
+          <Border Grid.Row="1" Height="1" Background="#0f0f0f" Margin="0,0,12,12"/>
+          <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" Padding="0,0,10,0">
+            <StackPanel x:Name="DebloatList" Margin="0,0,0,16"/>
+          </ScrollViewer>
+        </Grid>
 
-      <!-- GAME MODE -->
-      <Grid x:Name="PageGame" Grid.Row="1" Visibility="Collapsed" Margin="28,0,14,0">
-        <Grid.RowDefinitions>
-          <RowDefinition Height="Auto"/>
-          <RowDefinition Height="Auto"/>
-          <RowDefinition Height="*"/>
-        </Grid.RowDefinitions>
-        <StackPanel Grid.Row="0" HorizontalAlignment="Center" Margin="0,24,0,18">
-          <TextBlock HorizontalAlignment="Center" Margin="0,0,0,14">
-            <Run Text="Game Mode" FontFamily="Georgia" FontSize="38" FontWeight="Bold" Foreground="White"/>
-            <Run Text="." FontFamily="Georgia" FontSize="38" FontWeight="Bold" Foreground="#8b5cf6"/>
-          </TextBlock>
-          <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-            <Button x:Name="GameAll"   Content="Select All"  Style="{StaticResource PillBtn}"    Margin="5,0"/>
-            <Button x:Name="GameRec"   Content="Recommended" Style="{StaticResource OutlineBtn}" Margin="5,0"/>
-            <Button x:Name="GameClear" Content="Clear"       Style="{StaticResource OutlineBtn}" Margin="5,0"/>
-            <Button x:Name="GameBack"  Content="Back"        Style="{StaticResource GhostBtn}"   Margin="5,0"/>
+        <!-- ── GAME OPT ── -->
+        <Grid x:Name="PgGameOpt" Visibility="Collapsed" Margin="26,0,12,0">
+          <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+          </Grid.RowDefinitions>
+          <StackPanel Grid.Row="0" HorizontalAlignment="Center" Margin="0,22,0,16">
+            <TextBlock HorizontalAlignment="Center" Margin="0,0,0,14">
+              <Run Text="Game Mode" FontFamily="Georgia" FontSize="36" FontWeight="Bold" Foreground="White"/>
+              <Run Text="." FontFamily="Georgia" FontSize="36" FontWeight="Bold" Foreground="#8b5cf6"/>
+            </TextBlock>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+              <Button x:Name="GameAll"   Content="Select All"  Style="{StaticResource Pill}"    Margin="4,0"/>
+              <Button x:Name="GameRec"   Content="Recommended" Style="{StaticResource Outline}"  Margin="4,0"/>
+              <Button x:Name="GameClear" Content="Clear"       Style="{StaticResource Outline}"  Margin="4,0"/>
+              <Button x:Name="GameBack"  Content="Back"        Style="{StaticResource Ghost}"    Margin="4,0"/>
+            </StackPanel>
           </StackPanel>
-        </StackPanel>
-        <Border Grid.Row="1" Height="1" Background="#161616" Margin="0,0,14,12"/>
-        <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" Padding="0,0,12,0">
-          <StackPanel x:Name="GameList" Margin="0,0,0,16"/>
-        </ScrollViewer>
+          <Border Grid.Row="1" Height="1" Background="#0f0f0f" Margin="0,0,12,12"/>
+          <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" Padding="0,0,10,0">
+            <StackPanel x:Name="GameOptList" Margin="0,0,0,16"/>
+          </ScrollViewer>
+        </Grid>
+
+        <!-- ── APPLY LOG ── -->
+        <Grid x:Name="PgLog" Visibility="Collapsed" Margin="26,0,12,0">
+          <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+          </Grid.RowDefinitions>
+          <StackPanel Grid.Row="0" HorizontalAlignment="Center" Margin="0,22,0,4">
+            <TextBlock HorizontalAlignment="Center">
+              <Run Text="Applying" FontFamily="Georgia" FontSize="36" FontWeight="Bold" Foreground="White"/>
+              <Run Text="." FontFamily="Georgia" FontSize="36" FontWeight="Bold" Foreground="#8b5cf6"/>
+            </TextBlock>
+            <TextBlock x:Name="LogStatus" Text="Running..." FontFamily="Segoe UI"
+                       FontSize="11" Foreground="#2e2e2e" HorizontalAlignment="Center" Margin="0,6,0,0"/>
+          </StackPanel>
+          <Border Grid.Row="1" Height="1" Background="#0f0f0f" Margin="0,14,12,12"/>
+          <ScrollViewer x:Name="LogScroll" Grid.Row="2" VerticalScrollBarVisibility="Auto" Padding="0,0,8,0">
+            <TextBlock x:Name="LogText" FontFamily="Consolas" FontSize="11"
+                       Foreground="#282828" TextWrapping="Wrap" LineHeight="22"/>
+          </ScrollViewer>
+          <Button x:Name="LogDone" Grid.Row="3" Content="Done" Style="{StaticResource Pill}"
+                  HorizontalAlignment="Center" Margin="0,14,0,24" Visibility="Collapsed"/>
+        </Grid>
+
+        <!-- ══════════ PRO SETTINGS — GAME SELECT ══════════ -->
+        <Grid x:Name="PgProGames" Visibility="Collapsed" Margin="26,0,22,0">
+          <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+          </Grid.RowDefinitions>
+          <StackPanel Grid.Row="0" Margin="0,24,0,4">
+            <TextBlock>
+              <Run Text="Pro Settings" FontFamily="Georgia" FontSize="30"
+                   FontWeight="Bold" Foreground="White"/>
+              <Run Text="." FontFamily="Georgia" FontSize="30"
+                   FontWeight="Bold" Foreground="#8b5cf6"/>
+            </TextBlock>
+            <TextBlock Text="Choose a game to browse verified pro player configurations."
+                       FontFamily="Segoe UI" FontSize="12" Foreground="#2a2a2a" Margin="0,6,0,0"/>
+            <TextBlock Text="Data sourced from prosettings.net"
+                       FontFamily="Segoe UI" FontSize="10" Foreground="#1c1c1c" Margin="0,3,0,0"/>
+          </StackPanel>
+          <Border Grid.Row="1" Height="1" Background="#0f0f0f" Margin="0,18,0,20"/>
+          <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
+            <UniformGrid x:Name="GameGrid" Columns="3" Margin="0,0,0,24" HorizontalAlignment="Left"/>
+          </ScrollViewer>
+        </Grid>
+
+        <!-- ══════════ PRO SETTINGS — PLAYER LIST ══════════ -->
+        <Grid x:Name="PgProPlayers" Visibility="Collapsed" Margin="26,0,22,0">
+          <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+          </Grid.RowDefinitions>
+          <StackPanel Grid.Row="0" Margin="0,24,0,4">
+            <Button x:Name="BtnBackGames" Style="{StaticResource Ghost}"
+                    HorizontalAlignment="Left" Padding="14,6" Margin="0,0,0,14">
+              <StackPanel Orientation="Horizontal">
+                <TextBlock Text="←" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                <TextBlock Text="All Games" VerticalAlignment="Center"/>
+              </StackPanel>
+            </Button>
+            <TextBlock x:Name="ProTitle">
+              <Run x:Name="ProTitleRun" Text="Players" FontFamily="Georgia"
+                   FontSize="30" FontWeight="Bold" Foreground="White"/>
+              <Run Text="." FontFamily="Georgia" FontSize="30"
+                   FontWeight="Bold" Foreground="#8b5cf6"/>
+            </TextBlock>
+            <TextBlock Text="Verified settings · prosettings.net"
+                       FontFamily="Segoe UI" FontSize="10" Foreground="#1c1c1c" Margin="0,5,0,0"/>
+          </StackPanel>
+          <Border Grid.Row="1" Height="1" Background="#0f0f0f" Margin="0,14,0,16"/>
+          <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" Padding="0,0,6,0">
+            <StackPanel x:Name="PlayerList" Margin="0,0,0,24"/>
+          </ScrollViewer>
+        </Grid>
+
+        <!-- ══════════ APP SETTINGS ══════════ -->
+        <Grid x:Name="PgSettings" Visibility="Collapsed" Margin="26,0,22,0">
+          <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+          </Grid.RowDefinitions>
+          <StackPanel Grid.Row="0" Margin="0,24,0,4">
+            <TextBlock>
+              <Run Text="Settings" FontFamily="Georgia" FontSize="30"
+                   FontWeight="Bold" Foreground="White"/>
+              <Run Text="." FontFamily="Georgia" FontSize="30"
+                   FontWeight="Bold" Foreground="#8b5cf6"/>
+            </TextBlock>
+          </StackPanel>
+          <Border Grid.Row="1" Height="1" Background="#0f0f0f" Margin="0,18,0,22"/>
+          <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
+            <StackPanel Margin="0,0,0,28">
+
+              <!-- RESTORE POINT -->
+              <TextBlock Text="SYSTEM" FontFamily="Segoe UI" FontSize="9" FontWeight="SemiBold"
+                         Foreground="#1e1e1e" Margin="0,0,0,10" LetterSpacing="2"/>
+              <Border Background="#0c0c0c" BorderBrush="#161616" BorderThickness="1"
+                      CornerRadius="10" Padding="20,16" Margin="0,0,0,6">
+                <Grid>
+                  <StackPanel>
+                    <TextBlock Text="Create Restore Point" FontFamily="Segoe UI" FontSize="13"
+                               FontWeight="SemiBold" Foreground="#aaa"/>
+                    <TextBlock Text="Creates a Windows restore snapshot before applying any tweaks. Highly recommended."
+                               FontFamily="Segoe UI" FontSize="11" Foreground="#2a2a2a"
+                               TextWrapping="Wrap" Margin="0,5,0,0"/>
+                  </StackPanel>
+                  <Button x:Name="StgRestore" Content="Create Now" Style="{StaticResource Pill}"
+                          HorizontalAlignment="Right" VerticalAlignment="Center"
+                          FontSize="11" Padding="16,8"/>
+                </Grid>
+              </Border>
+
+              <!-- ABOUT -->
+              <TextBlock Text="ABOUT" FontFamily="Segoe UI" FontSize="9" FontWeight="SemiBold"
+                         Foreground="#1e1e1e" Margin="0,20,0,10" LetterSpacing="2"/>
+              <Border Background="#0c0c0c" BorderBrush="#161616" BorderThickness="1"
+                      CornerRadius="10" Padding="20,16" Margin="0,0,0,6">
+                <StackPanel>
+                  <TextBlock Text="Wrath v2.0" FontFamily="Segoe UI" FontSize="13"
+                             FontWeight="SemiBold" Foreground="#aaa"/>
+                  <TextBlock Text="Windows optimization tool. Run as Administrator. Pro settings data courtesy of prosettings.net — the most trusted source for verified pro player configurations."
+                             FontFamily="Segoe UI" FontSize="11" Foreground="#2a2a2a"
+                             TextWrapping="Wrap" Margin="0,6,0,0"/>
+                </StackPanel>
+              </Border>
+
+              <!-- DANGER ZONE -->
+              <TextBlock Text="DANGER ZONE" FontFamily="Segoe UI" FontSize="9" FontWeight="SemiBold"
+                         Foreground="#1e1e1e" Margin="0,20,0,10" LetterSpacing="2"/>
+              <Border Background="#0c0c0c" BorderBrush="#1a0e0e" BorderThickness="1"
+                      CornerRadius="10" Padding="20,16" Margin="0,0,0,6">
+                <Grid>
+                  <StackPanel>
+                    <TextBlock Text="Reset All Selections" FontFamily="Segoe UI" FontSize="13"
+                               FontWeight="SemiBold" Foreground="#aaa"/>
+                    <TextBlock Text="Clears every checked tweak across all three categories."
+                               FontFamily="Segoe UI" FontSize="11" Foreground="#2a2a2a"
+                               TextWrapping="Wrap" Margin="0,5,0,0"/>
+                  </StackPanel>
+                  <Button x:Name="StgClearAll" Content="Clear All" Style="{StaticResource DangerBtn}"
+                          HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                </Grid>
+              </Border>
+
+            </StackPanel>
+          </ScrollViewer>
+        </Grid>
+
       </Grid>
 
-      <!-- LOG / PROGRESS PAGE -->
-      <Grid x:Name="PageLog" Grid.Row="1" Visibility="Collapsed" Margin="28,0,14,0">
-        <Grid.RowDefinitions>
-          <RowDefinition Height="Auto"/>
-          <RowDefinition Height="Auto"/>
-          <RowDefinition Height="*"/>
-          <RowDefinition Height="Auto"/>
-        </Grid.RowDefinitions>
-        <StackPanel Grid.Row="0" HorizontalAlignment="Center" Margin="0,24,0,4">
-          <TextBlock HorizontalAlignment="Center">
-            <Run Text="Applying" FontFamily="Georgia" FontSize="38" FontWeight="Bold" Foreground="White"/>
-            <Run Text="." FontFamily="Georgia" FontSize="38" FontWeight="Bold" Foreground="#8b5cf6"/>
-          </TextBlock>
-          <TextBlock x:Name="LogStatus" Text="Running tweaks..." FontFamily="Consolas"
-                     FontSize="11" Foreground="#444" HorizontalAlignment="Center" Margin="0,6,0,0"/>
-        </StackPanel>
-        <Border Grid.Row="1" Height="1" Background="#161616" Margin="0,16,14,12"/>
-        <ScrollViewer x:Name="LogScroll" Grid.Row="2"
-                      VerticalScrollBarVisibility="Auto" Padding="0,0,12,0">
-          <TextBlock x:Name="LogText" FontFamily="Consolas" FontSize="11"
-                     Foreground="#3a3a3a" TextWrapping="Wrap" LineHeight="22"
-                     Margin="0,0,0,8"/>
-        </ScrollViewer>
-        <Button x:Name="LogDone" Grid.Row="3" Content="Done"
-                Style="{StaticResource PillBtn}" HorizontalAlignment="Center"
-                Margin="0,14,0,24" Visibility="Collapsed"/>
-      </Grid>
-
-      <!-- ── APPLY BAR ── -->
-      <Border x:Name="ApplyBar" Grid.Row="2" Visibility="Collapsed"
-              Background="#0a0a0a" BorderBrush="#161616" BorderThickness="0,1,0,0"
-              CornerRadius="0,0,14,14" Padding="28,14">
+      <!-- ════════════════ APPLY BAR ════════════════ -->
+      <Border x:Name="ApplyBar" Grid.Column="1" Grid.Row="2" Visibility="Collapsed"
+              Background="#060606" BorderBrush="#0f0f0f" BorderThickness="0,1,0,0"
+              CornerRadius="0,0,14,0" Padding="26,13">
         <Grid>
-          <TextBlock x:Name="ApplyLabel" FontFamily="Consolas" FontSize="12"
-                     Foreground="#444" VerticalAlignment="Center"/>
+          <TextBlock x:Name="ApplyLabel" FontFamily="Segoe UI" FontSize="12"
+                     Foreground="#333" VerticalAlignment="Center"/>
           <Button x:Name="BtnApply" Content="Apply Now"
-                  Style="{StaticResource PillBtn}" HorizontalAlignment="Right"/>
+                  Style="{StaticResource Pill}" HorizontalAlignment="Right"/>
         </Grid>
       </Border>
 
@@ -346,431 +596,821 @@ Add-Type -AssemblyName WindowsBase
 </Window>
 '@
 
-# ════════════════════════════════════════════════════════
-#  TWEAK DEFINITIONS
-# ════════════════════════════════════════════════════════
+# ══════════════════════════════════════════════════════════════
+#  PRO SETTINGS DATA  (verified via prosettings.net)
+# ══════════════════════════════════════════════════════════════
 
-$Script:Data = [ordered]@{
+$Script:Games = @(
 
+  [PSCustomObject]@{
+    Name="Counter-Strike 2"; Icon="🎯"
+    Players=@(
+      [PSCustomObject]@{ Name="ZywOo";    Team="Team Vitality";  Role="Rifler / AWP"; DPI=400;  Sens=2.00; eDPI=800;  Res="1280x960";  Aspect="4:3";  Hz=240; Mouse="Vaxee Outset AX" }
+      [PSCustomObject]@{ Name="s1mple";   Team="NAVI";           Role="AWPer";        DPI=400;  Sens=3.09; eDPI=1236; Res="1280x960";  Aspect="4:3";  Hz=240; Mouse="Logitech G Pro X Superlight 2" }
+      [PSCustomObject]@{ Name="NiKo";     Team="G2 Esports";     Role="Rifler";       DPI=400;  Sens=1.55; eDPI=620;  Res="1280x960";  Aspect="4:3";  Hz=240; Mouse="Logitech G Pro X Superlight 2" }
+      [PSCustomObject]@{ Name="donk";     Team="Team Spirit";    Role="Rifler";       DPI=800;  Sens=1.25; eDPI=1000; Res="1280x960";  Aspect="4:3";  Hz=360; Mouse="Logitech G Pro X Superlight 2 DEX" }
+      [PSCustomObject]@{ Name="m0NESY";   Team="G2 Esports";     Role="AWPer";        DPI=800;  Sens=2.00; eDPI=1600; Res="1280x960";  Aspect="4:3";  Hz=360; Mouse="Logitech G Pro X Superlight 2" }
+      [PSCustomObject]@{ Name="ropz";     Team="FaZe Clan";      Role="Rifler";       DPI=400;  Sens=1.77; eDPI=708;  Res="1280x960";  Aspect="4:3";  Hz=240; Mouse="Logitech G Pro X Superlight 2" }
+      [PSCustomObject]@{ Name="broky";    Team="FaZe Clan";      Role="AWPer";        DPI=400;  Sens=1.70; eDPI=680;  Res="1280x960";  Aspect="4:3";  Hz=240; Mouse="Logitech G Pro X Superlight 2" }
+      [PSCustomObject]@{ Name="device";   Team="Astralis";       Role="AWPer";        DPI=400;  Sens=2.20; eDPI=880;  Res="1280x960";  Aspect="4:3";  Hz=240; Mouse="BenQ Zowie EC2-C" }
+    )
+  }
+
+  [PSCustomObject]@{
+    Name="VALORANT"; Icon="⚡"
+    Players=@(
+      [PSCustomObject]@{ Name="TenZ";     Team="Sentinels";   Role="Duelist";    DPI=1600; Sens=0.15; eDPI=240;  Res="1920x1080"; Aspect="16:9"; Hz=360; Mouse="Finalmouse Starlight-12 Phantom" }
+      [PSCustomObject]@{ Name="Aspas";    Team="Leviatán";    Role="Duelist";    DPI=800;  Sens=0.40; eDPI=320;  Res="1920x1080"; Aspect="16:9"; Hz=360; Mouse="Logitech G Pro X Superlight 2" }
+      [PSCustomObject]@{ Name="Demon1";   Team="NRG";         Role="Duelist";    DPI=1600; Sens=0.10; eDPI=160;  Res="1920x1080"; Aspect="16:9"; Hz=360; Mouse="ASUS ROG Harpe II Ace" }
+      [PSCustomObject]@{ Name="Derke";    Team="Fnatic";      Role="Duelist";    DPI=400;  Sens=0.74; eDPI=296;  Res="1920x1080"; Aspect="16:9"; Hz=360; Mouse="Logitech G Pro X Superlight 2" }
+      [PSCustomObject]@{ Name="ZmjjKK";   Team="EDG";         Role="Duelist";    DPI=800;  Sens=0.35; eDPI=280;  Res="1920x1080"; Aspect="16:9"; Hz=360; Mouse="Finalmouse Starlight Pro" }
+      [PSCustomObject]@{ Name="Less";     Team="LOUD";        Role="Initiator";  DPI=1600; Sens=0.22; eDPI=352;  Res="1920x1080"; Aspect="16:9"; Hz=360; Mouse="Logitech G Pro X Superlight 2" }
+      [PSCustomObject]@{ Name="Boaster";  Team="Fnatic";      Role="Controller"; DPI=800;  Sens=0.26; eDPI=208;  Res="1920x1080"; Aspect="16:9"; Hz=240; Mouse="Logitech G Pro X Superlight" }
+      [PSCustomObject]@{ Name="MaKo";     Team="DRX";         Role="Controller"; DPI=400;  Sens=0.55; eDPI=220;  Res="1920x1080"; Aspect="16:9"; Hz=360; Mouse="Logitech G Pro X Superlight 2" }
+    )
+  }
+
+  [PSCustomObject]@{
+    Name="Fortnite"; Icon="🏆"
+    Players=@(
+      [PSCustomObject]@{ Name="Bugha";      Team="Free Agent"; Role="Builder";   DPI=400;  Sens=0.10; eDPI=40;  Res="1920x1080"; Aspect="16:9"; Hz=240; Mouse="Razer Viper V3 Pro" }
+      [PSCustomObject]@{ Name="Mongraal";   Team="FaZe Clan";  Role="Fragger";   DPI=1600; Sens=0.06; eDPI=96;  Res="1920x1080"; Aspect="16:9"; Hz=240; Mouse="Logitech G303 Shroud Edition" }
+      [PSCustomObject]@{ Name="Clix";       Team="XSET";       Role="Fragger";   DPI=400;  Sens=0.13; eDPI=52;  Res="1920x1080"; Aspect="16:9"; Hz=240; Mouse="Finalmouse ULX" }
+      [PSCustomObject]@{ Name="MrSavage";   Team="NRG";        Role="Builder";   DPI=400;  Sens=0.10; eDPI=40;  Res="1920x1080"; Aspect="16:9"; Hz=360; Mouse="Logitech G Pro X Superlight 2" }
+      [PSCustomObject]@{ Name="Benjyfishy"; Team="MCES";       Role="Versatile"; DPI=400;  Sens=0.11; eDPI=44;  Res="1920x1080"; Aspect="16:9"; Hz=240; Mouse="Logitech G Pro X Superlight 2" }
+      [PSCustomObject]@{ Name="Peterbot";   Team="Free Agent"; Role="Fragger";   DPI=1600; Sens=0.05; eDPI=80;  Res="1920x1080"; Aspect="16:9"; Hz=360; Mouse="Logitech G Pro X Superlight 2" }
+    )
+  }
+
+  [PSCustomObject]@{
+    Name="Apex Legends"; Icon="🔥"
+    Players=@(
+      [PSCustomObject]@{ Name="ImperialHal"; Team="Falcons Esports"; Role="IGL";     DPI=400;  Sens=2.0; eDPI=800;  Res="1440x1080"; Aspect="4:3";  Hz=240; Mouse="Finalmouse Starlight Pro TenZ Edition" }
+      [PSCustomObject]@{ Name="Genburten";   Team="Falcons Esports"; Role="Fragger"; DPI=800;  Sens=1.0; eDPI=800;  Res="1920x1080"; Aspect="16:9"; Hz=360; Mouse="Logitech G Pro X Superlight 2" }
+      [PSCustomObject]@{ Name="Faide";       Team="SSG";             Role="Fragger"; DPI=800;  Sens=0.8; eDPI=640;  Res="1920x1080"; Aspect="16:9"; Hz=360; Mouse="Logitech G Pro X Superlight 2" }
+      [PSCustomObject]@{ Name="Aceu";        Team="Free Agent";      Role="Fragger"; DPI=800;  Sens=1.5; eDPI=1200; Res="1920x1080"; Aspect="16:9"; Hz=240; Mouse="Logitech G Pro X Superlight 2" }
+      [PSCustomObject]@{ Name="Verhulst";    Team="Team Liquid";     Role="Support"; DPI=800;  Sens=1.6; eDPI=1280; Res="1920x1080"; Aspect="16:9"; Hz=240; Mouse="Logitech G Pro X Superlight" }
+      [PSCustomObject]@{ Name="Mande";       Team="FaZe Clan";       Role="Fragger"; DPI=1600; Sens=0.6; eDPI=960;  Res="1920x1080"; Aspect="16:9"; Hz=360; Mouse="Logitech G Pro X Superlight 2" }
+    )
+  }
+
+  [PSCustomObject]@{
+    Name="Overwatch 2"; Icon="🛡"
+    Players=@(
+      [PSCustomObject]@{ Name="Fleta";    Team="Seoul Dynasty";   Role="DPS";    DPI=800; Sens=6.5;  eDPI=5200; Res="1920x1080"; Aspect="16:9"; Hz=360; Mouse="Logitech G Pro X Superlight 2" }
+      [PSCustomObject]@{ Name="Proper";   Team="LA Gladiators";   Role="DPS";    DPI=800; Sens=5.5;  eDPI=4400; Res="1920x1080"; Aspect="16:9"; Hz=240; Mouse="Logitech G Pro X Superlight 2" }
+      [PSCustomObject]@{ Name="Profit";   Team="Seoul Dynasty";   Role="DPS";    DPI=800; Sens=6.0;  eDPI=4800; Res="1920x1080"; Aspect="16:9"; Hz=360; Mouse="Logitech G Pro X Superlight 2" }
+      [PSCustomObject]@{ Name="Viol2t";   Team="Boston Uprising"; Role="Support"; DPI=800; Sens=4.5; eDPI=3600; Res="1920x1080"; Aspect="16:9"; Hz=240; Mouse="Logitech G Pro X Superlight" }
+    )
+  }
+
+  [PSCustomObject]@{
+    Name="Rainbow Six Siege"; Icon="💥"
+    Players=@(
+      [PSCustomObject]@{ Name="Pengu";    Team="NRG";        Role="Support"; DPI=400; Sens=36; eDPI=14400; Res="1920x1080"; Aspect="16:9"; Hz=360; Mouse="Logitech G Pro X Superlight 2" }
+      [PSCustomObject]@{ Name="Beaulo";   Team="TSM";        Role="Fragger"; DPI=400; Sens=45; eDPI=18000; Res="2560x1440"; Aspect="16:9"; Hz=360; Mouse="Logitech G Pro X Superlight 2" }
+      [PSCustomObject]@{ Name="Canadian"; Team="TSM";        Role="Anchor";  DPI=400; Sens=24; eDPI=9600;  Res="1920x1080"; Aspect="16:9"; Hz=240; Mouse="Logitech G Pro X Superlight 2" }
+      [PSCustomObject]@{ Name="Kafe";     Team="BDS Esport"; Role="Support"; DPI=800; Sens=22; eDPI=17600; Res="1920x1080"; Aspect="16:9"; Hz=360; Mouse="Logitech G Pro X Superlight 2" }
+    )
+  }
+)
+
+# ══════════════════════════════════════════════════════════════
+#  TWEAK DATA
+# ══════════════════════════════════════════════════════════════
+
+$Script:Tweaks = [ordered]@{
   Delay = @(
-    [PSCustomObject]@{ Cat="Telemetry"; Name="Disable Windows Telemetry";     Badge="REC";     Desc="Sets telemetry to level 0. Stops Microsoft collecting usage and diagnostic data."
-      Action={ Set-ItemProperty -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\DataCollection" -Name AllowTelemetry -Value 0 -Force -EA SilentlyContinue }}
-    [PSCustomObject]@{ Cat="Telemetry"; Name="Disable DiagTrack Service";      Badge="REC";     Desc="Stops the Connected User Experiences and Telemetry background service."
+    [PSCustomObject]@{ Cat="Telemetry"; Badge="REC"; Name="Disable Windows Telemetry"
+      Desc="Sets telemetry to level 0. Stops Microsoft collecting usage and diagnostic data."
+      Action={ Set-ItemProperty "HKLM:\SOFTWARE\Policies\Microsoft\Windows\DataCollection" -Name AllowTelemetry -Value 0 -Force -EA SilentlyContinue }}
+    [PSCustomObject]@{ Cat="Telemetry"; Badge="REC"; Name="Disable DiagTrack Service"
+      Desc="Stops the Connected User Experiences and Telemetry background service."
       Action={ Stop-Service DiagTrack -EA SilentlyContinue; Set-Service DiagTrack -StartupType Disabled -EA SilentlyContinue }}
-    [PSCustomObject]@{ Cat="Telemetry"; Name="Disable dmwappushsvc";           Badge="REC";     Desc="Kills WAP Push telemetry routing service. No user-facing feature relies on it."
+    [PSCustomObject]@{ Cat="Telemetry"; Badge="REC"; Name="Disable dmwappushsvc"
+      Desc="Kills WAP Push telemetry routing service. No user feature relies on it."
       Action={ Stop-Service dmwappushsvc -EA SilentlyContinue; Set-Service dmwappushsvc -StartupType Disabled -EA SilentlyContinue }}
-    [PSCustomObject]@{ Cat="Telemetry"; Name="Disable CEIP Tasks";             Badge="REC";     Desc="Disables all Customer Experience Improvement Program scheduled tasks."
+    [PSCustomObject]@{ Cat="Telemetry"; Badge="REC"; Name="Disable CEIP Scheduled Tasks"
+      Desc="Disables all Customer Experience Improvement Program tasks."
       Action={ Get-ScheduledTask -TaskPath "\Microsoft\Windows\Customer Experience Improvement Program\*" -EA SilentlyContinue | Disable-ScheduledTask -EA SilentlyContinue }}
-    [PSCustomObject]@{ Cat="Telemetry"; Name="Disable Feedback Notifications"; Badge="REC";     Desc="Turns off Windows prompts asking you to send Microsoft feedback."
+    [PSCustomObject]@{ Cat="Telemetry"; Badge="REC"; Name="Disable Feedback Notifications"
+      Desc="Turns off Windows prompts asking you to send feedback to Microsoft."
       Action={ $p="HKCU:\SOFTWARE\Microsoft\Siuf\Rules"; if(!(Test-Path $p)){New-Item $p -Force|Out-Null}; Set-ItemProperty $p -Name NumberOfSIUFInPeriod -Value 0 -Force }}
-    [PSCustomObject]@{ Cat="Telemetry"; Name="Disable Error Reporting";        Badge="REC";     Desc="Stops Windows sending crash and error reports to Microsoft."
+    [PSCustomObject]@{ Cat="Telemetry"; Badge="REC"; Name="Disable Error Reporting"
+      Desc="Stops Windows sending crash reports to Microsoft."
       Action={ Disable-WindowsErrorReporting -EA SilentlyContinue }}
 
-    [PSCustomObject]@{ Cat="Background Services"; Name="Disable SysMain (Superfetch)";    Badge="REC";     Desc="Prevents disk thrashing on SSDs. Reduces stutters in games."
+    [PSCustomObject]@{ Cat="Background Services"; Badge="REC"; Name="Disable SysMain (Superfetch)"
+      Desc="Prevents disk thrashing on SSDs. Reduces game stutters."
       Action={ Stop-Service SysMain -EA SilentlyContinue; Set-Service SysMain -StartupType Disabled -EA SilentlyContinue }}
-    [PSCustomObject]@{ Cat="Background Services"; Name="Disable Search Indexing";         Badge="CAUTION"; Desc="Stops background index service. Search still works but may be slower."
+    [PSCustomObject]@{ Cat="Background Services"; Badge="CAUTION"; Name="Disable Search Indexing"
+      Desc="Stops background indexer. Search still works but may feel slower."
       Action={ Stop-Service WSearch -EA SilentlyContinue; Set-Service WSearch -StartupType Disabled -EA SilentlyContinue }}
-    [PSCustomObject]@{ Cat="Background Services"; Name="Disable Delivery Optimization";   Badge="REC";     Desc="Stops Windows using your PC as a P2P update server for other machines."
+    [PSCustomObject]@{ Cat="Background Services"; Badge="REC"; Name="Disable Delivery Optimization"
+      Desc="Stops Windows using your PC as a P2P update server."
       Action={ $p="HKLM:\SOFTWARE\Policies\Microsoft\Windows\DeliveryOptimization"; if(!(Test-Path $p)){New-Item $p -Force|Out-Null}; Set-ItemProperty $p -Name DODownloadMode -Value 0 -Force }}
-    [PSCustomObject]@{ Cat="Background Services"; Name="Disable Print Spooler";           Badge="CAUTION"; Desc="Frees memory if you have no printer. Re-enable if you need to print."
+    [PSCustomObject]@{ Cat="Background Services"; Badge="CAUTION"; Name="Disable Print Spooler"
+      Desc="Frees memory. Re-enable if you have a printer."
       Action={ Stop-Service Spooler -EA SilentlyContinue; Set-Service Spooler -StartupType Disabled -EA SilentlyContinue }}
-    [PSCustomObject]@{ Cat="Background Services"; Name="Disable Windows Insider Service"; Badge="REC";     Desc="Kills Insider telemetry even if not enrolled in the Insider program."
+    [PSCustomObject]@{ Cat="Background Services"; Badge="REC"; Name="Disable Windows Insider Service"
+      Desc="Kills Insider telemetry even if not enrolled."
       Action={ Stop-Service wisvc -EA SilentlyContinue; Set-Service wisvc -StartupType Disabled -EA SilentlyContinue }}
 
-    [PSCustomObject]@{ Cat="Privacy"; Name="Disable Advertising ID";       Badge="REC"; Desc="Stops Windows assigning an advertising ID to your session. Zero downsides."
+    [PSCustomObject]@{ Cat="Privacy"; Badge="REC"; Name="Disable Advertising ID"
+      Desc="Stops Windows assigning an advertising ID to your profile."
       Action={ $p="HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\AdvertisingInfo"; if(!(Test-Path $p)){New-Item $p -Force|Out-Null}; Set-ItemProperty $p -Name Enabled -Value 0 -Force }}
-    [PSCustomObject]@{ Cat="Privacy"; Name="Disable Activity History";     Badge="REC"; Desc="Stops Windows logging app usage and sending it to Microsoft Timeline cloud."
+    [PSCustomObject]@{ Cat="Privacy"; Badge="REC"; Name="Disable Activity History"
+      Desc="Stops Windows logging app usage and syncing it to Microsoft cloud."
       Action={ $p="HKLM:\SOFTWARE\Policies\Microsoft\Windows\System"; if(!(Test-Path $p)){New-Item $p -Force|Out-Null}; Set-ItemProperty $p -Name EnableActivityFeed -Value 0 -Force }}
-    [PSCustomObject]@{ Cat="Privacy"; Name="Disable Location Tracking";    Badge="REC"; Desc="Disables the system-wide location service."
+    [PSCustomObject]@{ Cat="Privacy"; Badge="REC"; Name="Disable Location Tracking"
+      Desc="Disables the system-wide location service."
       Action={ Set-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\location" -Name Value -Value Deny -Force -EA SilentlyContinue }}
-    [PSCustomObject]@{ Cat="Privacy"; Name="Disable App Diagnostics Access"; Badge="REC"; Desc="Prevents apps reading diagnostic info about other running apps."
+    [PSCustomObject]@{ Cat="Privacy"; Badge="REC"; Name="Disable App Diagnostics Access"
+      Desc="Prevents apps reading diagnostics of other running apps."
       Action={ Set-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\appDiagnostics" -Name Value -Value Deny -Force -EA SilentlyContinue }}
 
-    [PSCustomObject]@{ Cat="Timers & Scheduler"; Name="Set Timer Resolution to 0.5ms"; Badge="REC"; Desc="Forces minimum timer interval. Reduces scheduling jitter and improves frame pacing."
+    [PSCustomObject]@{ Cat="Timers"; Badge="REC"; Name="Set Timer Resolution 0.5ms"
+      Desc="Forces minimum timer interval. Reduces scheduling jitter. Improves frame pacing."
       Action={ powercfg /setacvalueindex SCHEME_CURRENT SUB_PROCESSOR TIMERRESOLUTION 5000 2>$null }}
-    [PSCustomObject]@{ Cat="Timers & Scheduler"; Name="Disable Auto-Defrag on SSD";   Badge="REC"; Desc="Stops Windows defragging SSDs. Defragging an SSD wastes write cycles for zero gain."
+    [PSCustomObject]@{ Cat="Timers"; Badge="REC"; Name="Disable SSD Auto-Defrag"
+      Desc="Stops Windows defragging SSDs. Wastes write cycles for zero benefit."
       Action={ $p="HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Schedule\Maintenance"; if(!(Test-Path $p)){New-Item $p -Force|Out-Null}; Set-ItemProperty $p -Name MaintenanceDisabled -Value 1 -Force }}
 
-    [PSCustomObject]@{ Cat="UI Latency"; Name="Disable Menu Show Delay";  Badge="REC"; Desc="Sets MenuShowDelay to 0ms. Context menus open instantly with no lag."
+    [PSCustomObject]@{ Cat="UI Latency"; Badge="REC"; Name="Disable Menu Show Delay"
+      Desc="Sets MenuShowDelay to 0ms. Context menus open instantly."
       Action={ Set-ItemProperty "HKCU:\Control Panel\Desktop" -Name MenuShowDelay -Value 0 -Force }}
-    [PSCustomObject]@{ Cat="UI Latency"; Name="Disable Startup Delay";    Badge="REC"; Desc="Removes the 10-second artificial delay before startup apps launch after login."
+    [PSCustomObject]@{ Cat="UI Latency"; Badge="REC"; Name="Disable Startup Delay"
+      Desc="Removes the 10-second artificial delay before startup apps launch."
       Action={ $p="HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Serialize"; if(!(Test-Path $p)){New-Item $p -Force|Out-Null}; Set-ItemProperty $p -Name StartupDelayInMSec -Value 0 -Force }}
-    [PSCustomObject]@{ Cat="UI Latency"; Name="Disable Window Animations"; Badge="REC"; Desc="Turns off all window animations and transitions. UI feels immediately snappier."
+    [PSCustomObject]@{ Cat="UI Latency"; Badge="REC"; Name="Disable Window Animations"
+      Desc="Turns off all window animations and transitions for a snappier UI."
       Action={ Set-ItemProperty "HKCU:\Control Panel\Desktop\WindowMetrics" -Name MinAnimate -Value 0 -Force }}
-    [PSCustomObject]@{ Cat="UI Latency"; Name="Disable Mouse Acceleration"; Badge="REC"; Desc="Removes pointer acceleration for 1:1 mouse movement. Essential for gaming accuracy."
+    [PSCustomObject]@{ Cat="UI Latency"; Badge="REC"; Name="Disable Mouse Acceleration"
+      Desc="1:1 mouse movement. Essential for aim consistency in competitive games."
       Action={ Set-ItemProperty "HKCU:\Control Panel\Mouse" -Name MouseSpeed -Value 0 -Force; Set-ItemProperty "HKCU:\Control Panel\Mouse" -Name MouseThreshold1 -Value 0 -Force; Set-ItemProperty "HKCU:\Control Panel\Mouse" -Name MouseThreshold2 -Value 0 -Force }}
   )
 
   Debloat = @(
-    [PSCustomObject]@{ Cat="Microsoft Apps"; Name="Remove Candy Crush";             Badge="REC";     Desc="Removes Candy Crush Saga and all King games pre-installed by Microsoft."
+    [PSCustomObject]@{ Cat="Microsoft Apps"; Badge="REC"; Name="Remove Candy Crush"
+      Desc="Removes Candy Crush Saga and all King games pre-installed by Microsoft."
       Action={ Get-AppxPackage "king.com*" -EA SilentlyContinue | Remove-AppxPackage -EA SilentlyContinue }}
-    [PSCustomObject]@{ Cat="Microsoft Apps"; Name="Remove Xbox Apps";               Badge="CAUTION"; Desc="Removes Xbox Console Companion. Skip if you use Xbox services."
+    [PSCustomObject]@{ Cat="Microsoft Apps"; Badge="CAUTION"; Name="Remove Xbox Apps"
+      Desc="Removes Xbox Console Companion. Skip if you use Xbox services."
       Action={ Get-AppxPackage Microsoft.XboxApp -EA SilentlyContinue | Remove-AppxPackage -EA SilentlyContinue }}
-    [PSCustomObject]@{ Cat="Microsoft Apps"; Name="Remove 3D Builder";              Badge="REC";     Desc="Removes 3D Builder. Rarely used. Safe to remove on virtually all systems."
+    [PSCustomObject]@{ Cat="Microsoft Apps"; Badge="REC"; Name="Remove 3D Builder"
+      Desc="Rarely used. Safe to remove on virtually all PCs."
       Action={ Get-AppxPackage Microsoft.3DBuilder -EA SilentlyContinue | Remove-AppxPackage -EA SilentlyContinue }}
-    [PSCustomObject]@{ Cat="Microsoft Apps"; Name="Remove Solitaire Collection";    Badge="REC";     Desc="Removes the pre-installed ad-supported card game collection."
+    [PSCustomObject]@{ Cat="Microsoft Apps"; Badge="REC"; Name="Remove Solitaire Collection"
+      Desc="Removes the pre-installed ad-supported card game suite."
       Action={ Get-AppxPackage Microsoft.MicrosoftSolitaireCollection -EA SilentlyContinue | Remove-AppxPackage -EA SilentlyContinue }}
-    [PSCustomObject]@{ Cat="Microsoft Apps"; Name="Remove MSN Money/Sports/News";   Badge="REC";     Desc="Removes the ad-supported MSN app suite. Better alternatives exist in browser."
+    [PSCustomObject]@{ Cat="Microsoft Apps"; Badge="REC"; Name="Remove MSN Money/Sports/News"
+      Desc="Removes the ad-supported MSN app suite."
       Action={ "Microsoft.BingFinance","Microsoft.BingSports","Microsoft.BingNews" | ForEach-Object { Get-AppxPackage $_ -EA SilentlyContinue | Remove-AppxPackage -EA SilentlyContinue }}}
-    [PSCustomObject]@{ Cat="Microsoft Apps"; Name="Remove Get Office Nag App";      Badge="REC";     Desc="Removes the app whose sole purpose is prompting you to buy Microsoft 365."
+    [PSCustomObject]@{ Cat="Microsoft Apps"; Badge="REC"; Name="Remove Get Office Nag App"
+      Desc="Removes the app whose sole purpose is selling you Microsoft 365."
       Action={ Get-AppxPackage Microsoft.MicrosoftOfficeHub -EA SilentlyContinue | Remove-AppxPackage -EA SilentlyContinue }}
-    [PSCustomObject]@{ Cat="Microsoft Apps"; Name="Remove Skype UWP";               Badge="REC";     Desc="Removes the pre-installed Store version of Skype."
+    [PSCustomObject]@{ Cat="Microsoft Apps"; Badge="REC"; Name="Remove Skype UWP"
+      Desc="Removes the pre-installed Store version of Skype."
       Action={ Get-AppxPackage Microsoft.SkypeApp -EA SilentlyContinue | Remove-AppxPackage -EA SilentlyContinue }}
-    [PSCustomObject]@{ Cat="Microsoft Apps"; Name="Remove People App";              Badge="REC";     Desc="Removes the Contacts app that integrates annoyingly into the taskbar."
+    [PSCustomObject]@{ Cat="Microsoft Apps"; Badge="REC"; Name="Remove People App"
+      Desc="Removes the Contacts app that integrates into the taskbar."
       Action={ Get-AppxPackage Microsoft.People -EA SilentlyContinue | Remove-AppxPackage -EA SilentlyContinue }}
 
-    [PSCustomObject]@{ Cat="Windows Features"; Name="Remove Mixed Reality Portal"; Badge="REC";     Desc="Removes Mixed Reality Portal installed on all PCs even without VR headsets."
+    [PSCustomObject]@{ Cat="Windows Features"; Badge="REC"; Name="Remove Mixed Reality Portal"
+      Desc="Installed on all PCs even without VR headsets."
       Action={ Get-AppxPackage Microsoft.MixedReality.Portal -EA SilentlyContinue | Remove-AppxPackage -EA SilentlyContinue }}
-    [PSCustomObject]@{ Cat="Windows Features"; Name="Disable Cortana";             Badge="REC";     Desc="Fully disables Cortana and its background data collection. Search still works."
+    [PSCustomObject]@{ Cat="Windows Features"; Badge="REC"; Name="Disable Cortana"
+      Desc="Fully disables Cortana and its background data processes. Search still works."
       Action={ Get-AppxPackage Microsoft.549981C3F5F10 -EA SilentlyContinue | Remove-AppxPackage -EA SilentlyContinue; $p="HKLM:\SOFTWARE\Policies\Microsoft\Windows\Windows Search"; if(!(Test-Path $p)){New-Item $p -Force|Out-Null}; Set-ItemProperty $p -Name AllowCortana -Value 0 -Force }}
-    [PSCustomObject]@{ Cat="Windows Features"; Name="Remove Clipchamp";            Badge="REC";     Desc="Removes Microsoft Clipchamp video editor bundled into Windows 11."
+    [PSCustomObject]@{ Cat="Windows Features"; Badge="REC"; Name="Remove Clipchamp"
+      Desc="Removes the Microsoft video editor bundled into Windows 11."
       Action={ Get-AppxPackage Clipchamp.Clipchamp -EA SilentlyContinue | Remove-AppxPackage -EA SilentlyContinue }}
-    [PSCustomObject]@{ Cat="Windows Features"; Name="Remove Teams (Consumer)";     Badge="REC";     Desc="Removes pre-installed Teams consumer app. Does not affect enterprise Teams."
+    [PSCustomObject]@{ Cat="Windows Features"; Badge="REC"; Name="Remove Teams (Consumer)"
+      Desc="Removes pre-installed consumer Teams. Does not affect enterprise Teams."
       Action={ Get-AppxPackage MicrosoftTeams -EA SilentlyContinue | Remove-AppxPackage -EA SilentlyContinue }}
-    [PSCustomObject]@{ Cat="Windows Features"; Name="Remove Paint 3D";             Badge="REC";     Desc="Removes Paint 3D. Classic MS Paint is kept untouched."
+    [PSCustomObject]@{ Cat="Windows Features"; Badge="REC"; Name="Remove Paint 3D"
+      Desc="Removes Paint 3D. Classic MS Paint is kept untouched."
       Action={ Get-AppxPackage Microsoft.MSPaint -EA SilentlyContinue | Remove-AppxPackage -EA SilentlyContinue }}
-    [PSCustomObject]@{ Cat="Windows Features"; Name="Remove OneNote UWP";          Badge="CAUTION"; Desc="Removes Store version of OneNote. Install full desktop version if you use it."
+    [PSCustomObject]@{ Cat="Windows Features"; Badge="CAUTION"; Name="Remove OneNote UWP"
+      Desc="Removes Store OneNote. Install full desktop version if needed."
       Action={ Get-AppxPackage Microsoft.Office.OneNote -EA SilentlyContinue | Remove-AppxPackage -EA SilentlyContinue }}
 
-    [PSCustomObject]@{ Cat="System Junk"; Name="Disable OneDrive Auto-Start";      Badge="REC"; Desc="Stops OneDrive launching at startup. Still works if opened manually."
+    [PSCustomObject]@{ Cat="System Junk"; Badge="REC"; Name="Disable OneDrive Auto-Start"
+      Desc="Stops OneDrive launching at startup. Still works if opened manually."
       Action={ reg delete "HKCU\Software\Microsoft\Windows\CurrentVersion\Run" /v OneDrive /f 2>$null }}
-    [PSCustomObject]@{ Cat="System Junk"; Name="Block Silently-Installed Apps";    Badge="REC"; Desc="Stops Windows auto-downloading sponsored apps from the Store in the background."
+    [PSCustomObject]@{ Cat="System Junk"; Badge="REC"; Name="Block Silently-Installed Apps"
+      Desc="Stops Windows auto-downloading sponsored apps from the Store."
       Action={ Set-ItemProperty "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\ContentDeliveryManager" -Name SilentInstalledAppsEnabled -Value 0 -Force }}
-    [PSCustomObject]@{ Cat="System Junk"; Name="Remove Start Menu Ads";            Badge="REC"; Desc="Disables sponsored app suggestions and ads in Start Menu and search results."
+    [PSCustomObject]@{ Cat="System Junk"; Badge="REC"; Name="Remove Start Menu Ads"
+      Desc="Disables sponsored suggestions in Start Menu and search results."
       Action={ Set-ItemProperty "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\ContentDeliveryManager" -Name SystemPaneSuggestionsEnabled -Value 0 -Force }}
-    [PSCustomObject]@{ Cat="System Junk"; Name="Disable Web Search in Start";      Badge="REC"; Desc="Stops Start Menu sending searches to Bing. Search stays local only."
+    [PSCustomObject]@{ Cat="System Junk"; Badge="REC"; Name="Disable Web Search in Start"
+      Desc="Stops Start Menu sending searches to Bing. Search stays local only."
       Action={ $p="HKLM:\SOFTWARE\Policies\Microsoft\Windows\Windows Search"; if(!(Test-Path $p)){New-Item $p -Force|Out-Null}; Set-ItemProperty $p -Name DisableWebSearch -Value 1 -Force }}
-    [PSCustomObject]@{ Cat="System Junk"; Name="Disable Lock Screen Spotlight Ads";Badge="REC"; Desc="Replaces Windows Spotlight ad rotation on lock screen with your wallpaper."
+    [PSCustomObject]@{ Cat="System Junk"; Badge="REC"; Name="Disable Lock Screen Spotlight Ads"
+      Desc="Replaces Spotlight ad rotation with your chosen wallpaper."
       Action={ Set-ItemProperty "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\ContentDeliveryManager" -Name RotatingLockScreenEnabled -Value 0 -Force }}
 
-    [PSCustomObject]@{ Cat="Taskbar"; Name="Remove Widgets Button";         Badge="REC"; Desc="Removes the ad-supported Windows 11 Widgets button from the taskbar."
+    [PSCustomObject]@{ Cat="Taskbar"; Badge="REC"; Name="Remove Widgets Button"
+      Desc="Removes the ad-supported Windows 11 Widgets button."
       Action={ Set-ItemProperty "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" -Name TaskbarDa -Value 0 -Force }}
-    [PSCustomObject]@{ Cat="Taskbar"; Name="Remove Task View Button";       Badge="REC"; Desc="Hides Task View button. Virtual desktops still work via Win+Tab."
+    [PSCustomObject]@{ Cat="Taskbar"; Badge="REC"; Name="Remove Task View Button"
+      Desc="Hides the Task View button. Virtual desktops still work via Win+Tab."
       Action={ Set-ItemProperty "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" -Name ShowTaskViewButton -Value 0 -Force }}
-    [PSCustomObject]@{ Cat="Taskbar"; Name="Disable News & Interests Feed"; Badge="REC"; Desc="Removes MSN news feed from taskbar and disables its background update service."
+    [PSCustomObject]@{ Cat="Taskbar"; Badge="REC"; Name="Disable News & Interests Feed"
+      Desc="Removes MSN news widget and kills its background update service."
       Action={ $p="HKLM:\SOFTWARE\Policies\Microsoft\Windows\Windows Feeds"; if(!(Test-Path $p)){New-Item $p -Force|Out-Null}; Set-ItemProperty $p -Name EnableFeeds -Value 0 -Force }}
   )
 
   Game = @(
-    [PSCustomObject]@{ Cat="Power & CPU"; Name="Enable Ultimate Performance Plan"; Badge="REC"; Desc="Unlocks hidden Ultimate Performance power plan. Max CPU frequency, no core parking."
+    [PSCustomObject]@{ Cat="Power & CPU"; Badge="REC"; Name="Enable Ultimate Performance Plan"
+      Desc="Unlocks hidden Ultimate Performance plan. Max CPU frequency, no core parking."
       Action={ powercfg -duplicatescheme e9a42b02-d5df-448d-aa00-03f14749eb61 2>$null; $s=(powercfg /list|Select-String "Ultimate"); if($s){ $g=$s.ToString().Trim().Split()[3]; powercfg /setactive $g }}}
-    [PSCustomObject]@{ Cat="Power & CPU"; Name="Disable CPU Core Parking";         Badge="REC"; Desc="Keeps all CPU cores active and instantly available. No more park/unpark delays."
+    [PSCustomObject]@{ Cat="Power & CPU"; Badge="REC"; Name="Disable CPU Core Parking"
+      Desc="Keeps all CPU cores instantly available. No park/unpark scheduling delays."
       Action={ powercfg -setacvalueindex SCHEME_CURRENT SUB_PROCESSOR CPMINCORES 100; powercfg -setactive SCHEME_CURRENT }}
-    [PSCustomObject]@{ Cat="Power & CPU"; Name="Prioritize Foreground Programs";   Badge="REC"; Desc="Adjusts scheduler to give your active game priority over background tasks."
+    [PSCustomObject]@{ Cat="Power & CPU"; Badge="REC"; Name="Prioritize Foreground Programs"
+      Desc="Scheduler gives active game maximum priority over background tasks."
       Action={ Set-ItemProperty "HKLM:\SYSTEM\CurrentControlSet\Control\PriorityControl" -Name Win32PrioritySeparation -Value 38 -Force }}
-    [PSCustomObject]@{ Cat="Power & CPU"; Name="Disable Power Throttling";         Badge="REC"; Desc="Forces full CPU performance at all times. Disables efficiency throttling."
+    [PSCustomObject]@{ Cat="Power & CPU"; Badge="REC"; Name="Disable Power Throttling"
+      Desc="Forces full CPU performance. Disables efficiency throttling entirely."
       Action={ $p="HKLM:\SYSTEM\CurrentControlSet\Control\Power\PowerThrottling"; if(!(Test-Path $p)){New-Item $p -Force|Out-Null}; Set-ItemProperty $p -Name PowerThrottlingOff -Value 1 -Force }}
 
-    [PSCustomObject]@{ Cat="GPU & Graphics"; Name="Enable HAGS";                       Badge="REC";     Desc="Hardware-Accelerated GPU Scheduling. Reduces latency on RTX 2000+ and RX 5000+."
+    [PSCustomObject]@{ Cat="GPU & Graphics"; Badge="REC"; Name="Enable HAGS"
+      Desc="Hardware-Accelerated GPU Scheduling. Reduces latency on RTX 2000+ and RX 5000+."
       Action={ Set-ItemProperty "HKLM:\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" -Name HwSchMode -Value 2 -Force }}
-    [PSCustomObject]@{ Cat="GPU & Graphics"; Name="Disable Game Bar & DVR";            Badge="REC";     Desc="Removes Game Bar overlay and DVR hook. Noticeable FPS boost in some games."
+    [PSCustomObject]@{ Cat="GPU & Graphics"; Badge="REC"; Name="Disable Game Bar & DVR"
+      Desc="Removes overlay hook. Provides FPS improvement in many titles."
       Action={ $p="HKCU:\Software\Microsoft\Windows\CurrentVersion\GameDVR"; if(!(Test-Path $p)){New-Item $p -Force|Out-Null}; Set-ItemProperty $p -Name AppCaptureEnabled -Value 0 -Force; $p2="HKLM:\SOFTWARE\Policies\Microsoft\Windows\GameDVR"; if(!(Test-Path $p2)){New-Item $p2 -Force|Out-Null}; Set-ItemProperty $p2 -Name AllowGameDVR -Value 0 -Force }}
-    [PSCustomObject]@{ Cat="GPU & Graphics"; Name="Disable NVIDIA Telemetry";          Badge="REC";     Desc="Stops NVIDIA background telemetry services. Frees RAM and reduces CPU usage."
+    [PSCustomObject]@{ Cat="GPU & Graphics"; Badge="REC"; Name="Disable NVIDIA Telemetry"
+      Desc="Stops NVIDIA background telemetry services. Frees RAM and CPU overhead."
       Action={ Stop-Service NvTelemetryContainer -EA SilentlyContinue; Set-Service NvTelemetryContainer -StartupType Disabled -EA SilentlyContinue }}
-    [PSCustomObject]@{ Cat="GPU & Graphics"; Name="Enable Variable Refresh Rate (VRR)"; Badge="REC";    Desc="Enables VRR and Adaptive Sync for windowed and fullscreen games."
+    [PSCustomObject]@{ Cat="GPU & Graphics"; Badge="REC"; Name="Enable Variable Refresh Rate"
+      Desc="Enables VRR / Adaptive Sync for windowed and fullscreen games system-wide."
       Action={ Set-ItemProperty "HKCU:\Software\Microsoft\DirectX\UserGpuPreferences" -Name DirectXUserGlobalSettings -Value "VRROptimizeEnable=1;" -Force -EA SilentlyContinue }}
-    [PSCustomObject]@{ Cat="GPU & Graphics"; Name="Disable Full-Screen Optimizations"; Badge="REC";     Desc="Turns off Windows FSO which can cause input lag in certain games."
+    [PSCustomObject]@{ Cat="GPU & Graphics"; Badge="REC"; Name="Disable Full-Screen Optimizations"
+      Desc="Turns off Windows FSO. Reduces input lag in affected titles."
       Action={ $p="HKCU:\System\GameConfigStore"; if(!(Test-Path $p)){New-Item $p -Force|Out-Null}; Set-ItemProperty $p -Name GameDVR_FSEBehaviorMode -Value 2 -Force; Set-ItemProperty $p -Name GameDVR_HonorUserFSEBehaviorMode -Value 1 -Force }}
-    [PSCustomObject]@{ Cat="GPU & Graphics"; Name="Force Maximum GPU Power State";     Badge="CAUTION"; Desc="Keeps GPU at P0 state always. Increases power draw and heat. Desktop use only."
+    [PSCustomObject]@{ Cat="GPU & Graphics"; Badge="CAUTION"; Name="Force Max GPU Power State"
+      Desc="Keeps GPU at P0 state always. Increases power draw and heat. Desktop/tower only."
       Action={ Set-ItemProperty "HKLM:\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000" -Name PP_GPUPowerGatingDisable -Value 1 -Force -EA SilentlyContinue }}
 
-    [PSCustomObject]@{ Cat="Network"; Name="Disable Nagle's Algorithm";      Badge="REC"; Desc="Removes TCP packet buffering delay. Lower ping in online games."
-      Action={ $ifaces=Get-ChildItem "HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters\Interfaces" -EA SilentlyContinue; foreach($i in $ifaces){ Set-ItemProperty $i.PSPath -Name TcpAckFrequency -Value 1 -Force -EA SilentlyContinue; Set-ItemProperty $i.PSPath -Name TCPNoDelay -Value 1 -Force -EA SilentlyContinue }}}
-    [PSCustomObject]@{ Cat="Network"; Name="Set DNS to Cloudflare 1.1.1.1"; Badge="REC"; Desc="Fastest public DNS resolver. Reduces game server and matchmaking resolution time."
+    [PSCustomObject]@{ Cat="Network"; Badge="REC"; Name="Disable Nagle's Algorithm"
+      Desc="Removes TCP packet buffering. Lowers ping in competitive online games."
+      Action={ $i=Get-ChildItem "HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters\Interfaces" -EA SilentlyContinue; foreach($n in $i){ Set-ItemProperty $n.PSPath -Name TcpAckFrequency -Value 1 -Force -EA SilentlyContinue; Set-ItemProperty $n.PSPath -Name TCPNoDelay -Value 1 -Force -EA SilentlyContinue }}}
+    [PSCustomObject]@{ Cat="Network"; Badge="REC"; Name="Set DNS to Cloudflare 1.1.1.1"
+      Desc="Fastest public DNS. Reduces game server and matchmaking resolution time."
       Action={ Get-NetAdapter|Where-Object Status -eq Up|ForEach-Object { Set-DnsClientServerAddress -InterfaceIndex $_.InterfaceIndex -ServerAddresses 1.1.1.1,1.0.0.1 -EA SilentlyContinue }}}
 
-    [PSCustomObject]@{ Cat="Memory & Storage"; Name="Disable Paging Executive"; Badge="CAUTION"; Desc="Keeps Windows kernel in RAM. Requires 8GB+. Improves frame time consistency."
+    [PSCustomObject]@{ Cat="Memory & Storage"; Badge="CAUTION"; Name="Disable Paging Executive"
+      Desc="Keeps Windows kernel in RAM. Requires 8GB+. Improves frame time consistency."
       Action={ Set-ItemProperty "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" -Name DisablePagingExecutive -Value 1 -Force }}
-    [PSCustomObject]@{ Cat="Memory & Storage"; Name="Run TRIM on SSD";         Badge="REC";     Desc="Runs TRIM on your C: drive for optimal SSD health and consistent read performance."
+    [PSCustomObject]@{ Cat="Memory & Storage"; Badge="REC"; Name="Run TRIM on SSD"
+      Desc="Runs TRIM on C: drive for optimal SSD health and performance."
       Action={ Optimize-Volume -DriveLetter C -ReTrim -EA SilentlyContinue }}
 
-    [PSCustomObject]@{ Cat="Windows Gaming"; Name="Enable Windows Game Mode";     Badge="REC"; Desc="Dedicates more CPU/GPU to your active game and suppresses background notifications."
+    [PSCustomObject]@{ Cat="Windows Gaming"; Badge="REC"; Name="Enable Windows Game Mode"
+      Desc="Dedicates more CPU/GPU to the active game. Suppresses background notifications."
       Action={ $p="HKCU:\Software\Microsoft\GameBar"; if(!(Test-Path $p)){New-Item $p -Force|Out-Null}; Set-ItemProperty $p -Name AutoGameModeEnabled -Value 1 -Force }}
-    [PSCustomObject]@{ Cat="Windows Gaming"; Name="Disable Game Bar Hotkeys";    Badge="REC"; Desc="Disables Win+G and other game bar shortcuts that interrupt gameplay."
+    [PSCustomObject]@{ Cat="Windows Gaming"; Badge="REC"; Name="Disable Game Bar Hotkeys"
+      Desc="Disables Win+G and other Game Bar shortcuts that interrupt gameplay."
       Action={ Set-ItemProperty "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\GameDVR" -Name GameDVR_Enabled -Value 0 -Force -EA SilentlyContinue }}
-    [PSCustomObject]@{ Cat="Windows Gaming"; Name="Force High Performance GPU";  Badge="REC"; Desc="Forces dedicated GPU for all apps. Critical on laptops with integrated + discrete GPUs."
+    [PSCustomObject]@{ Cat="Windows Gaming"; Badge="REC"; Name="Force High-Performance GPU"
+      Desc="Forces dedicated GPU for all apps. Critical on dual-GPU laptops."
       Action={ Set-ItemProperty "HKCU:\Software\Microsoft\DirectX\UserGpuPreferences" -Name DirectXUserGlobalSettings -Value "SwapEffectUpgradeEnable=1;VRROptimizeEnable=1;" -Force -EA SilentlyContinue }}
   )
 }
 
-# ════════════════════════════════════════════════════════
+# ══════════════════════════════════════════════════════════════
 #  LOAD WINDOW
-# ════════════════════════════════════════════════════════
+# ══════════════════════════════════════════════════════════════
 
 $reader = New-Object System.Xml.XmlNodeReader $XAML
 $Window = [Windows.Markup.XamlReader]::Load($reader)
-
-# Get named controls
 function gn($n){ $Window.FindName($n) }
 
-$PageHome    = gn "PageHome"
-$PageDelay   = gn "PageDelay"
-$PageDebloat = gn "PageDebloat"
-$PageGame    = gn "PageGame"
-$PageLog     = gn "PageLog"
+$Script:Pages  = @()
+$Script:Checks = @()
 
-$ApplyBar    = gn "ApplyBar"
-$ApplyLabel  = gn "ApplyLabel"
-$BtnApply    = gn "BtnApply"
+$PgOptHome    = gn "PgOptHome";    $Script:Pages += $PgOptHome
+$PgDelay      = gn "PgDelay";      $Script:Pages += $PgDelay
+$PgDebloat    = gn "PgDebloat";    $Script:Pages += $PgDebloat
+$PgGameOpt    = gn "PgGameOpt";    $Script:Pages += $PgGameOpt
+$PgLog        = gn "PgLog";        $Script:Pages += $PgLog
+$PgProGames   = gn "PgProGames";   $Script:Pages += $PgProGames
+$PgProPlayers = gn "PgProPlayers"; $Script:Pages += $PgProPlayers
+$PgSettings   = gn "PgSettings";   $Script:Pages += $PgSettings
 
-$LogText     = gn "LogText"
-$LogStatus   = gn "LogStatus"
-$LogScroll   = gn "LogScroll"
-$LogDone     = gn "LogDone"
+$ApplyBar  = gn "ApplyBar"
+$ApplyLabel= gn "ApplyLabel"
+$LogText   = gn "LogText"
+$LogStatus = gn "LogStatus"
+$LogScroll = gn "LogScroll"
+$LogDone   = gn "LogDone"
+$PageTitle = gn "PageTitle"
 
-$Script:Checks = @()  # all CheckBox controls
+# ══════════════════════════════════════════════════════════════
+#  HELPERS
+# ══════════════════════════════════════════════════════════════
 
-# ════════════════════════════════════════════════════════
-#  BUILD TWEAK LIST
-# ════════════════════════════════════════════════════════
+function Show-Page($pg, $title="") {
+    foreach ($p in $Script:Pages) { $p.Visibility = "Collapsed" }
+    $pg.Visibility = "Visible"
+    if ($title) { $PageTitle.Text = $title }
+}
 
-function New-CategorySeparator($label) {
+function Update-ApplyBar {
+    $n = ($Script:Checks | Where-Object { $_.Tag.Checked }).Count
+    $ApplyBar.Visibility = if ($n -gt 0) { "Visible" } else { "Collapsed" }
+    if ($n -gt 0) { $ApplyLabel.Text = "$n tweak$(if($n -ne 1){'s'}) selected" }
+}
+
+function Set-NavActive($active) {
+    foreach ($nb in @((gn "NavOpt"),(gn "NavPro"),(gn "NavSettings"))) {
+        $nb.Foreground = [System.Windows.Media.SolidColorBrush][System.Windows.Media.ColorConverter]::ConvertFromString("#2e2e2e")
+        $nb.FontWeight = "Normal"
+    }
+    $active.Foreground = [System.Windows.Media.SolidColorBrush][System.Windows.Media.ColorConverter]::ConvertFromString("#c4b5fd")
+    $active.FontWeight = "SemiBold"
+}
+
+# ══════════════════════════════════════════════════════════════
+#  BUILD TWEAK ROWS
+# ══════════════════════════════════════════════════════════════
+
+function New-Sep($lbl) {
     $g = New-Object System.Windows.Controls.Grid
-    $g.Margin = [System.Windows.Thickness]::new(0,18,0,6)
+    $g.Margin = [System.Windows.Thickness]::new(0,16,0,5)
     $c0 = New-Object System.Windows.Controls.ColumnDefinition; $c0.Width = [System.Windows.GridLength]::Auto
     $c1 = New-Object System.Windows.Controls.ColumnDefinition; $c1.Width = New-Object System.Windows.GridLength(1,[System.Windows.GridUnitType]::Star)
     $g.ColumnDefinitions.Add($c0); $g.ColumnDefinitions.Add($c1)
-
-    $lbl = New-Object System.Windows.Controls.TextBlock
-    $lbl.Text = $label.ToUpper()
-    $lbl.FontFamily = New-Object System.Windows.Media.FontFamily("Consolas")
-    $lbl.FontSize = 10
-    $lbl.Foreground = [System.Windows.Media.SolidColorBrush][System.Windows.Media.ColorConverter]::ConvertFromString("#3a3a3a")
-    $lbl.VerticalAlignment = "Center"
-    $lbl.Margin = [System.Windows.Thickness]::new(0,0,12,0)
-    [System.Windows.Controls.Grid]::SetColumn($lbl,0)
-
-    $line = New-Object System.Windows.Controls.Border
-    $line.Height = 1
-    $line.VerticalAlignment = "Center"
-    $line.Background = [System.Windows.Media.SolidColorBrush][System.Windows.Media.ColorConverter]::ConvertFromString("#161616")
-    [System.Windows.Controls.Grid]::SetColumn($line,1)
-
-    $g.Children.Add($lbl)|Out-Null
-    $g.Children.Add($line)|Out-Null
+    $t = New-Object System.Windows.Controls.TextBlock
+    $t.Text = $lbl.ToUpper()
+    $t.FontFamily = New-Object System.Windows.Media.FontFamily("Segoe UI")
+    $t.FontSize = 9; $t.FontWeight = [System.Windows.FontWeights]::SemiBold
+    $t.Foreground = [System.Windows.Media.SolidColorBrush][System.Windows.Media.ColorConverter]::ConvertFromString("#1e1e1e")
+    $t.VerticalAlignment = "Center"; $t.Margin = [System.Windows.Thickness]::new(0,0,12,0)
+    [System.Windows.Controls.Grid]::SetColumn($t,0)
+    $ln = New-Object System.Windows.Controls.Border
+    $ln.Height = 1; $ln.VerticalAlignment = "Center"
+    $ln.Background = [System.Windows.Media.SolidColorBrush][System.Windows.Media.ColorConverter]::ConvertFromString("#0f0f0f")
+    [System.Windows.Controls.Grid]::SetColumn($ln,1)
+    $g.Children.Add($t)|Out-Null; $g.Children.Add($ln)|Out-Null
     return $g
 }
 
-function New-TweakItem($tweak) {
-    $badgeMap = @{
-        "REC"     = @{ Bg="#0d2218"; Fg="#6ee7b7"; Br="#1a3d2a" }
-        "CAUTION" = @{ Bg="#2a1f00"; Fg="#fbbf24"; Br="#3d2d00" }
-        "ADVANCED"= @{ Bg="#2a0a0a"; Fg="#f87171"; Br="#3d1515" }
+function New-Row($tw) {
+    $bm = @{
+        "REC"     = @{ Bg="#0a1c12"; Fg="#6ee7b7"; Br="#122e1e" }
+        "CAUTION" = @{ Bg="#1c1700"; Fg="#fbbf24"; Br="#2e2600" }
+        "ADVANCED"= @{ Bg="#1c0a0a"; Fg="#f87171"; Br="#2e1010" }
     }
 
-    # Outer border (the whole row)
     $outer = New-Object System.Windows.Controls.Border
     $outer.CornerRadius = New-Object System.Windows.CornerRadius(8)
     $outer.BorderThickness = [System.Windows.Thickness]::new(1)
     $outer.BorderBrush = [System.Windows.Media.SolidColorBrush][System.Windows.Media.ColorConverter]::ConvertFromString("#00000000")
-    $outer.Padding = [System.Windows.Thickness]::new(12,10,12,10)
+    $outer.Padding = [System.Windows.Thickness]::new(14,10,14,10)
     $outer.Margin = [System.Windows.Thickness]::new(0,1,0,1)
     $outer.Cursor = [System.Windows.Input.Cursors]::Hand
-    $outer.Tag = $tweak
 
-    # Grid layout: checkbox | name+desc | badge
     $g = New-Object System.Windows.Controls.Grid
-    $c0 = New-Object System.Windows.Controls.ColumnDefinition; $c0.Width = [System.Windows.GridLength]::Auto
-    $c1 = New-Object System.Windows.Controls.ColumnDefinition; $c1.Width = New-Object System.Windows.GridLength(1,[System.Windows.GridUnitType]::Star)
-    $c2 = New-Object System.Windows.Controls.ColumnDefinition; $c2.Width = [System.Windows.GridLength]::Auto
-    $g.ColumnDefinitions.Add($c0); $g.ColumnDefinitions.Add($c1); $g.ColumnDefinitions.Add($c2)
+    for ($ci=0; $ci -lt 3; $ci++) {
+        $cd = New-Object System.Windows.Controls.ColumnDefinition
+        if ($ci -eq 0 -or $ci -eq 2) { $cd.Width = [System.Windows.GridLength]::Auto }
+        else { $cd.Width = New-Object System.Windows.GridLength(1,[System.Windows.GridUnitType]::Star) }
+        $g.ColumnDefinitions.Add($cd)
+    }
 
-    # Checkbox
-    $cb = New-Object System.Windows.Controls.CheckBox
-    $cb.VerticalAlignment = "Center"
-    $cb.Margin = [System.Windows.Thickness]::new(0,0,12,0)
-    $cb.Tag = $tweak
-    $cb.Foreground = [System.Windows.Media.Brushes]::Transparent
-    $cb.Width = 0; $cb.Height = 0  # hidden native checkbox, we draw our own box
-    [System.Windows.Controls.Grid]::SetColumn($cb,0)
-
-    # Custom visual checkbox box
+    # Box
     $box = New-Object System.Windows.Controls.Border
-    $box.Width = 17; $box.Height = 17
+    $box.Width = 16; $box.Height = 16
     $box.CornerRadius = New-Object System.Windows.CornerRadius(4)
     $box.BorderThickness = [System.Windows.Thickness]::new(1)
-    $box.BorderBrush = [System.Windows.Media.SolidColorBrush][System.Windows.Media.ColorConverter]::ConvertFromString("#2a2a2a")
+    $box.BorderBrush = [System.Windows.Media.SolidColorBrush][System.Windows.Media.ColorConverter]::ConvertFromString("#202020")
     $box.Background = [System.Windows.Media.Brushes]::Transparent
-    $box.VerticalAlignment = "Center"
-    $box.Margin = [System.Windows.Thickness]::new(0,0,12,0)
+    $box.VerticalAlignment = "Center"; $box.Margin = [System.Windows.Thickness]::new(0,0,14,0)
     [System.Windows.Controls.Grid]::SetColumn($box,0)
+    $chk = New-Object System.Windows.Controls.TextBlock
+    $chk.Text = [char]0x2713; $chk.FontSize = 10
+    $chk.HorizontalAlignment = "Center"; $chk.VerticalAlignment = "Center"
+    $chk.Foreground = [System.Windows.Media.Brushes]::Black; $chk.Visibility = "Collapsed"
+    $box.Child = $chk
 
-    $check = New-Object System.Windows.Controls.TextBlock
-    $check.Text = [char]0x2713
-    $check.FontSize = 11
-    $check.HorizontalAlignment = "Center"
-    $check.VerticalAlignment = "Center"
-    $check.Foreground = [System.Windows.Media.Brushes]::Black
-    $check.Visibility = "Collapsed"
-    $box.Child = $check
-
-    # Name + description stack
-    $stack = New-Object System.Windows.Controls.StackPanel
-    $stack.VerticalAlignment = "Center"
-    [System.Windows.Controls.Grid]::SetColumn($stack,1)
-
-    $nameTb = New-Object System.Windows.Controls.TextBlock
-    $nameTb.Text = $tweak.Name
-    $nameTb.FontFamily = New-Object System.Windows.Media.FontFamily("Consolas")
-    $nameTb.FontSize = 12
-    $nameTb.Foreground = [System.Windows.Media.SolidColorBrush][System.Windows.Media.ColorConverter]::ConvertFromString("#b0b0b0")
-    $nameTb.TextWrapping = "Wrap"
-
-    $descTb = New-Object System.Windows.Controls.TextBlock
-    $descTb.Text = $tweak.Desc
-    $descTb.FontFamily = New-Object System.Windows.Media.FontFamily("Consolas")
-    $descTb.FontSize = 11
-    $descTb.Foreground = [System.Windows.Media.SolidColorBrush][System.Windows.Media.ColorConverter]::ConvertFromString("#3a3a3a")
-    $descTb.TextWrapping = "Wrap"
-    $descTb.Margin = [System.Windows.Thickness]::new(0,4,0,0)
-    $descTb.Visibility = "Collapsed"
-
-    $stack.Children.Add($nameTb)|Out-Null
-    $stack.Children.Add($descTb)|Out-Null
+    # Text stack
+    $sp = New-Object System.Windows.Controls.StackPanel
+    $sp.VerticalAlignment = "Center"
+    [System.Windows.Controls.Grid]::SetColumn($sp,1)
+    $nm = New-Object System.Windows.Controls.TextBlock
+    $nm.Text = $tw.Name
+    $nm.FontFamily = New-Object System.Windows.Media.FontFamily("Segoe UI")
+    $nm.FontSize = 12; $nm.FontWeight = [System.Windows.FontWeights]::Medium
+    $nm.Foreground = [System.Windows.Media.SolidColorBrush][System.Windows.Media.ColorConverter]::ConvertFromString("#777")
+    $nm.TextWrapping = "Wrap"
+    $ds = New-Object System.Windows.Controls.TextBlock
+    $ds.Text = $tw.Desc
+    $ds.FontFamily = New-Object System.Windows.Media.FontFamily("Segoe UI")
+    $ds.FontSize = 11
+    $ds.Foreground = [System.Windows.Media.SolidColorBrush][System.Windows.Media.ColorConverter]::ConvertFromString("#282828")
+    $ds.TextWrapping = "Wrap"; $ds.Margin = [System.Windows.Thickness]::new(0,3,0,0)
+    $ds.Visibility = "Collapsed"
+    $sp.Children.Add($nm)|Out-Null; $sp.Children.Add($ds)|Out-Null
 
     # Badge
-    $bc = $badgeMap[$tweak.Badge]
-    $badgeBorder = New-Object System.Windows.Controls.Border
-    $badgeBorder.CornerRadius = New-Object System.Windows.CornerRadius(999)
-    $badgeBorder.Padding = [System.Windows.Thickness]::new(8,2,8,2)
-    $badgeBorder.VerticalAlignment = "Center"
-    $badgeBorder.Margin = [System.Windows.Thickness]::new(12,0,0,0)
-    $badgeBorder.Background = [System.Windows.Media.SolidColorBrush][System.Windows.Media.ColorConverter]::ConvertFromString($bc.Bg)
-    $badgeBorder.BorderBrush = [System.Windows.Media.SolidColorBrush][System.Windows.Media.ColorConverter]::ConvertFromString($bc.Br)
-    $badgeBorder.BorderThickness = [System.Windows.Thickness]::new(1)
-    [System.Windows.Controls.Grid]::SetColumn($badgeBorder,2)
+    $bc = $bm[$tw.Badge]
+    $bdg = New-Object System.Windows.Controls.Border
+    $bdg.CornerRadius = New-Object System.Windows.CornerRadius(999)
+    $bdg.Padding = [System.Windows.Thickness]::new(8,2,8,2)
+    $bdg.VerticalAlignment = "Center"; $bdg.Margin = [System.Windows.Thickness]::new(12,0,0,0)
+    $bdg.Background = [System.Windows.Media.SolidColorBrush][System.Windows.Media.ColorConverter]::ConvertFromString($bc.Bg)
+    $bdg.BorderBrush = [System.Windows.Media.SolidColorBrush][System.Windows.Media.ColorConverter]::ConvertFromString($bc.Br)
+    $bdg.BorderThickness = [System.Windows.Thickness]::new(1)
+    [System.Windows.Controls.Grid]::SetColumn($bdg,2)
+    $bt = New-Object System.Windows.Controls.TextBlock
+    $bt.Text = $tw.Badge
+    $bt.FontFamily = New-Object System.Windows.Media.FontFamily("Segoe UI")
+    $bt.FontSize = 9; $bt.FontWeight = [System.Windows.FontWeights]::SemiBold
+    $bt.Foreground = [System.Windows.Media.SolidColorBrush][System.Windows.Media.ColorConverter]::ConvertFromString($bc.Fg)
+    $bt.VerticalAlignment = "Center"; $bdg.Child = $bt
 
-    $badgeText = New-Object System.Windows.Controls.TextBlock
-    $badgeText.Text = $tweak.Badge
-    $badgeText.FontFamily = New-Object System.Windows.Media.FontFamily("Consolas")
-    $badgeText.FontSize = 9
-    $badgeText.Foreground = [System.Windows.Media.SolidColorBrush][System.Windows.Media.ColorConverter]::ConvertFromString($bc.Fg)
-    $badgeText.VerticalAlignment = "Center"
-    $badgeBorder.Child = $badgeText
-
-    $g.Children.Add($box)|Out-Null
-    $g.Children.Add($stack)|Out-Null
-    $g.Children.Add($badgeBorder)|Out-Null
+    $g.Children.Add($box)|Out-Null; $g.Children.Add($sp)|Out-Null; $g.Children.Add($bdg)|Out-Null
     $outer.Child = $g
+    $outer.Tag = @{ Tweak=$tw; Checked=$false; Box=$box; Chk=$chk; Nm=$nm; Ds=$ds }
 
-    # State: checked = true/false stored in Tag
-    $outer.Tag = @{ Tweak=$tweak; Checked=$false; Box=$box; Check=$check; NameTb=$nameTb; DescTb=$descTb; OuterBorder=$outer }
-
-    # Hover: show desc
-    $outer.Add_MouseEnter({
-        param($s,$e)
-        $s.Tag.DescTb.Visibility = "Visible"
+    $outer.Add_MouseEnter({ param($s,$e)
+        $s.Tag.Ds.Visibility = "Visible"
         if (-not $s.Tag.Checked) {
-            $s.Background = [System.Windows.Media.SolidColorBrush][System.Windows.Media.ColorConverter]::ConvertFromString("#0d0d0d")
-            $s.BorderBrush = [System.Windows.Media.SolidColorBrush][System.Windows.Media.ColorConverter]::ConvertFromString("#222222")
+            $s.Background = [System.Windows.Media.SolidColorBrush][System.Windows.Media.ColorConverter]::ConvertFromString("#0c0c0c")
+            $s.BorderBrush = [System.Windows.Media.SolidColorBrush][System.Windows.Media.ColorConverter]::ConvertFromString("#181818")
         }
     })
-    $outer.Add_MouseLeave({
-        param($s,$e)
-        $s.Tag.DescTb.Visibility = "Collapsed"
+    $outer.Add_MouseLeave({ param($s,$e)
+        $s.Tag.Ds.Visibility = "Collapsed"
         if (-not $s.Tag.Checked) {
             $s.Background = [System.Windows.Media.Brushes]::Transparent
             $s.BorderBrush = [System.Windows.Media.SolidColorBrush][System.Windows.Media.ColorConverter]::ConvertFromString("#00000000")
         }
     })
-
-    # Click: toggle
-    $outer.Add_MouseLeftButtonUp({
-        param($s,$e)
-        $t = $s.Tag
-        $t.Checked = -not $t.Checked
+    $outer.Add_MouseLeftButtonUp({ param($s,$e)
+        $t = $s.Tag; $t.Checked = -not $t.Checked
         if ($t.Checked) {
-            $s.Background = [System.Windows.Media.SolidColorBrush][System.Windows.Media.ColorConverter]::ConvertFromString("#0f0820")
-            $s.BorderBrush = [System.Windows.Media.SolidColorBrush][System.Windows.Media.ColorConverter]::ConvertFromString("#2e1f47")
+            $s.Background = [System.Windows.Media.SolidColorBrush][System.Windows.Media.ColorConverter]::ConvertFromString("#0d0820")
+            $s.BorderBrush = [System.Windows.Media.SolidColorBrush][System.Windows.Media.ColorConverter]::ConvertFromString("#281a44")
             $t.Box.Background = [System.Windows.Media.SolidColorBrush][System.Windows.Media.ColorConverter]::ConvertFromString("#8b5cf6")
             $t.Box.BorderBrush = [System.Windows.Media.SolidColorBrush][System.Windows.Media.ColorConverter]::ConvertFromString("#8b5cf6")
-            $t.Check.Visibility = "Visible"
-            $t.NameTb.Foreground = [System.Windows.Media.Brushes]::White
+            $t.Chk.Visibility = "Visible"
+            $t.Nm.Foreground = [System.Windows.Media.Brushes]::White
         } else {
             $s.Background = [System.Windows.Media.Brushes]::Transparent
             $s.BorderBrush = [System.Windows.Media.SolidColorBrush][System.Windows.Media.ColorConverter]::ConvertFromString("#00000000")
             $t.Box.Background = [System.Windows.Media.Brushes]::Transparent
-            $t.Box.BorderBrush = [System.Windows.Media.SolidColorBrush][System.Windows.Media.ColorConverter]::ConvertFromString("#2a2a2a")
-            $t.Check.Visibility = "Collapsed"
-            $t.NameTb.Foreground = [System.Windows.Media.SolidColorBrush][System.Windows.Media.ColorConverter]::ConvertFromString("#b0b0b0")
+            $t.Box.BorderBrush = [System.Windows.Media.SolidColorBrush][System.Windows.Media.ColorConverter]::ConvertFromString("#202020")
+            $t.Chk.Visibility = "Collapsed"
+            $t.Nm.Foreground = [System.Windows.Media.SolidColorBrush][System.Windows.Media.ColorConverter]::ConvertFromString("#777")
         }
         Update-ApplyBar
     })
-
     return $outer
 }
 
-function Build-Section($panel, $sectionKey) {
-    $tweaks = $Script:Data[$sectionKey]
-    $lastCat = ""
-    foreach ($t in $tweaks) {
-        if ($t.Cat -ne $lastCat) {
-            $panel.Children.Add((New-CategorySeparator $t.Cat))|Out-Null
-            $lastCat = $t.Cat
-        }
-        $item = New-TweakItem $t
-        $panel.Children.Add($item)|Out-Null
-        $Script:Checks += $item
+function Build-Section($panel, $key) {
+    $last = ""
+    foreach ($tw in $Script:Tweaks[$key]) {
+        if ($tw.Cat -ne $last) { $panel.Children.Add((New-Sep $tw.Cat))|Out-Null; $last = $tw.Cat }
+        $row = New-Row $tw; $panel.Children.Add($row)|Out-Null; $Script:Checks += $row
     }
 }
 
 Build-Section (gn "DelayList")   "Delay"
 Build-Section (gn "DebloatList") "Debloat"
-Build-Section (gn "GameList")    "Game"
+Build-Section (gn "GameOptList") "Game"
 
-# ════════════════════════════════════════════════════════
-#  HELPERS
-# ════════════════════════════════════════════════════════
+# ══════════════════════════════════════════════════════════════
+#  SELECT / CLEAR BULK
+# ══════════════════════════════════════════════════════════════
 
-function Update-ApplyBar {
-    $n = ($Script:Checks | Where-Object { $_.Tag.Checked }).Count
-    if ($n -gt 0) {
-        $ApplyBar.Visibility = "Visible"
-        $ApplyLabel.Text = "$n tweak$(if($n -ne 1){'s'}) selected"
-    } else {
-        $ApplyBar.Visibility = "Collapsed"
-    }
-}
-
-function Show-Page($p) {
-    foreach ($pg in @($PageHome,$PageDelay,$PageDebloat,$PageGame,$PageLog)) {
-        $pg.Visibility = "Collapsed"
-    }
-    $p.Visibility = "Visible"
-}
-
-function Set-SectionChecked($sectionKey, $value, [switch]$RecOnly) {
-    $names = $Script:Data[$sectionKey] | ForEach-Object { $_.Name }
-    foreach ($item in $Script:Checks) {
-        if ($item.Tag.Tweak.Name -in $names) {
-            $should = if ($RecOnly) { $item.Tag.Tweak.Badge -eq "REC" } else { $value }
-            if ($item.Tag.Checked -ne $should) {
-                $item.RaiseEvent((New-Object System.Windows.Input.MouseButtonEventArgs(
-                    [System.Windows.Input.Mouse]::PrimaryDevice, 0,
-                    [System.Windows.Input.MouseButton]::Left
-                )) )
-                # Direct set is cleaner:
-                $t = $item.Tag
-                $t.Checked = $should
-                if ($should) {
-                    $item.Background = [System.Windows.Media.SolidColorBrush][System.Windows.Media.ColorConverter]::ConvertFromString("#0f0820")
-                    $item.BorderBrush = [System.Windows.Media.SolidColorBrush][System.Windows.Media.ColorConverter]::ConvertFromString("#2e1f47")
-                    $t.Box.Background = [System.Windows.Media.SolidColorBrush][System.Windows.Media.ColorConverter]::ConvertFromString("#8b5cf6")
-                    $t.Box.BorderBrush = [System.Windows.Media.SolidColorBrush][System.Windows.Media.ColorConverter]::ConvertFromString("#8b5cf6")
-                    $t.Check.Visibility = "Visible"
-                    $t.NameTb.Foreground = [System.Windows.Media.Brushes]::White
-                } else {
-                    $item.Background = [System.Windows.Media.Brushes]::Transparent
-                    $item.BorderBrush = [System.Windows.Media.SolidColorBrush][System.Windows.Media.ColorConverter]::ConvertFromString("#00000000")
-                    $t.Box.Background = [System.Windows.Media.Brushes]::Transparent
-                    $t.Box.BorderBrush = [System.Windows.Media.SolidColorBrush][System.Windows.Media.ColorConverter]::ConvertFromString("#2a2a2a")
-                    $t.Check.Visibility = "Collapsed"
-                    $t.NameTb.Foreground = [System.Windows.Media.SolidColorBrush][System.Windows.Media.ColorConverter]::ConvertFromString("#b0b0b0")
-                }
+function Set-Bulk($key, $val, [switch]$RecOnly) {
+    $names = $Script:Tweaks[$key] | ForEach-Object { $_.Name }
+    foreach ($r in $Script:Checks) {
+        if ($r.Tag.Tweak.Name -notin $names) { continue }
+        $want = if ($RecOnly) { $r.Tag.Tweak.Badge -eq "REC" } else { $val }
+        if ($r.Tag.Checked -ne $want) {
+            $t = $r.Tag; $t.Checked = $want
+            if ($want) {
+                $r.Background = [System.Windows.Media.SolidColorBrush][System.Windows.Media.ColorConverter]::ConvertFromString("#0d0820")
+                $r.BorderBrush = [System.Windows.Media.SolidColorBrush][System.Windows.Media.ColorConverter]::ConvertFromString("#281a44")
+                $t.Box.Background = [System.Windows.Media.SolidColorBrush][System.Windows.Media.ColorConverter]::ConvertFromString("#8b5cf6")
+                $t.Box.BorderBrush = [System.Windows.Media.SolidColorBrush][System.Windows.Media.ColorConverter]::ConvertFromString("#8b5cf6")
+                $t.Chk.Visibility = "Visible"; $t.Nm.Foreground = [System.Windows.Media.Brushes]::White
+            } else {
+                $r.Background = [System.Windows.Media.Brushes]::Transparent
+                $r.BorderBrush = [System.Windows.Media.SolidColorBrush][System.Windows.Media.ColorConverter]::ConvertFromString("#00000000")
+                $t.Box.Background = [System.Windows.Media.Brushes]::Transparent
+                $t.Box.BorderBrush = [System.Windows.Media.SolidColorBrush][System.Windows.Media.ColorConverter]::ConvertFromString("#202020")
+                $t.Chk.Visibility = "Collapsed"
+                $t.Nm.Foreground = [System.Windows.Media.SolidColorBrush][System.Windows.Media.ColorConverter]::ConvertFromString("#777")
             }
         }
     }
     Update-ApplyBar
 }
 
-# ═════════════════════
+# ══════════════════════════════════════════════════════════════
+#  BUILD GAME CARDS
+# ══════════════════════════════════════════════════════════════
+
+$gg = gn "GameGrid"
+foreach ($game in $Script:Games) {
+    $btn = New-Object System.Windows.Controls.Button
+    $btn.Style = $Window.Resources["GameCard"]
+    $btn.Content = $game.Name
+    $btn.Tag = $game.Icon
+    $btn.Margin = [System.Windows.Thickness]::new(0,0,12,12)
+    $btn.MinWidth = 180
+
+    $gRef = $game
+    $btn.Add_Click({
+        param($s,$e)
+        $gm = $Script:Games | Where-Object { $_.Name -eq $s.Content }
+        Load-Players $gm
+        Show-Page $PgProPlayers "Pro Settings"
+        $rt = gn "ProTitleRun"; $rt.Text = $gm.Name
+    })
+    $gg.Children.Add($btn)|Out-Null
+}
+
+# ══════════════════════════════════════════════════════════════
+#  BUILD PLAYER CARDS
+# ══════════════════════════════════════════════════════════════
+
+function New-StatCell($label, $value) {
+    $bd = New-Object System.Windows.Controls.Border
+    $bd.Background = [System.Windows.Media.SolidColorBrush][System.Windows.Media.ColorConverter]::ConvertFromString("#090909")
+    $bd.BorderBrush = [System.Windows.Media.SolidColorBrush][System.Windows.Media.ColorConverter]::ConvertFromString("#121212")
+    $bd.BorderThickness = [System.Windows.Thickness]::new(1)
+    $bd.CornerRadius = New-Object System.Windows.CornerRadius(6)
+    $bd.Padding = [System.Windows.Thickness]::new(10,7,10,7)
+    $bd.Margin = [System.Windows.Thickness]::new(0,0,6,6)
+    $sp = New-Object System.Windows.Controls.StackPanel
+    $lbl = New-Object System.Windows.Controls.TextBlock
+    $lbl.Text = $label
+    $lbl.FontFamily = New-Object System.Windows.Media.FontFamily("Segoe UI")
+    $lbl.FontSize = 8; $lbl.FontWeight = [System.Windows.FontWeights]::SemiBold
+    $lbl.Foreground = [System.Windows.Media.SolidColorBrush][System.Windows.Media.ColorConverter]::ConvertFromString("#222")
+    $lbl.Margin = [System.Windows.Thickness]::new(0,0,0,2)
+    $val = New-Object System.Windows.Controls.TextBlock
+    $val.Text = $value
+    $val.FontFamily = New-Object System.Windows.Media.FontFamily("Segoe UI")
+    $val.FontSize = 13; $val.FontWeight = [System.Windows.FontWeights]::SemiBold
+    $val.Foreground = [System.Windows.Media.SolidColorBrush][System.Windows.Media.ColorConverter]::ConvertFromString("#a78bfa")
+    $sp.Children.Add($lbl)|Out-Null; $sp.Children.Add($val)|Out-Null
+    $bd.Child = $sp; return $bd
+}
+
+function Load-Players($game) {
+    $pl = gn "PlayerList"; $pl.Children.Clear()
+
+    foreach ($p in $game.Players) {
+        $card = New-Object System.Windows.Controls.Border
+        $card.Background = [System.Windows.Media.SolidColorBrush][System.Windows.Media.ColorConverter]::ConvertFromString("#0c0c0c")
+        $card.BorderBrush = [System.Windows.Media.SolidColorBrush][System.Windows.Media.ColorConverter]::ConvertFromString("#141414")
+        $card.BorderThickness = [System.Windows.Thickness]::new(1)
+        $card.CornerRadius = New-Object System.Windows.CornerRadius(10)
+        $card.Padding = [System.Windows.Thickness]::new(22,18,22,18)
+        $card.Margin = [System.Windows.Thickness]::new(0,0,0,8)
+
+        $card.Add_MouseEnter({ param($s,$e)
+            $s.Background = [System.Windows.Media.SolidColorBrush][System.Windows.Media.ColorConverter]::ConvertFromString("#0e0820")
+            $s.BorderBrush = [System.Windows.Media.SolidColorBrush][System.Windows.Media.ColorConverter]::ConvertFromString("#231550")
+        })
+        $card.Add_MouseLeave({ param($s,$e)
+            $s.Background = [System.Windows.Media.SolidColorBrush][System.Windows.Media.ColorConverter]::ConvertFromString("#0c0c0c")
+            $s.BorderBrush = [System.Windows.Media.SolidColorBrush][System.Windows.Media.ColorConverter]::ConvertFromString("#141414")
+        })
+
+        $outer = New-Object System.Windows.Controls.Grid
+        $ca = New-Object System.Windows.Controls.ColumnDefinition; $ca.Width = New-Object System.Windows.GridLength(1,[System.Windows.GridUnitType]::Star)
+        $cb = New-Object System.Windows.Controls.ColumnDefinition; $cb.Width = [System.Windows.GridLength]::Auto
+        $outer.ColumnDefinitions.Add($ca); $outer.ColumnDefinitions.Add($cb)
+
+        # Left
+        $left = New-Object System.Windows.Controls.StackPanel
+        [System.Windows.Controls.Grid]::SetColumn($left,0)
+
+        # Name row
+        $nr = New-Object System.Windows.Controls.StackPanel; $nr.Orientation = "Horizontal"
+        $nt = New-Object System.Windows.Controls.TextBlock
+        $nt.Text = $p.Name
+        $nt.FontFamily = New-Object System.Windows.Media.FontFamily("Segoe UI")
+        $nt.FontSize = 15; $nt.FontWeight = [System.Windows.FontWeights]::SemiBold
+        $nt.Foreground = [System.Windows.Media.Brushes]::White
+        $nr.Children.Add($nt)|Out-Null
+        $tt = New-Object System.Windows.Controls.TextBlock
+        $tt.Text = "  ·  $($p.Team)"
+        $tt.FontFamily = New-Object System.Windows.Media.FontFamily("Segoe UI")
+        $tt.FontSize = 12; $tt.VerticalAlignment = "Bottom"
+        $tt.Foreground = [System.Windows.Media.SolidColorBrush][System.Windows.Media.ColorConverter]::ConvertFromString("#282828")
+        $tt.Margin = [System.Windows.Thickness]::new(0,0,0,1)
+        $nr.Children.Add($tt)|Out-Null
+        $left.Children.Add($nr)|Out-Null
+
+        # Role pill
+        $rb = New-Object System.Windows.Controls.Border
+        $rb.CornerRadius = New-Object System.Windows.CornerRadius(999)
+        $rb.Padding = [System.Windows.Thickness]::new(8,2,8,2)
+        $rb.Background = [System.Windows.Media.SolidColorBrush][System.Windows.Media.ColorConverter]::ConvertFromString("#100820")
+        $rb.BorderBrush = [System.Windows.Media.SolidColorBrush][System.Windows.Media.ColorConverter]::ConvertFromString("#221540")
+        $rb.BorderThickness = [System.Windows.Thickness]::new(1)
+        $rb.Margin = [System.Windows.Thickness]::new(0,7,0,12); $rb.HorizontalAlignment = "Left"
+        $rt = New-Object System.Windows.Controls.TextBlock
+        $rt.Text = $p.Role
+        $rt.FontFamily = New-Object System.Windows.Media.FontFamily("Segoe UI")
+        $rt.FontSize = 10; $rt.FontWeight = [System.Windows.FontWeights]::SemiBold
+        $rt.Foreground = [System.Windows.Media.SolidColorBrush][System.Windows.Media.ColorConverter]::ConvertFromString("#8b5cf6")
+        $rb.Child = $rt; $left.Children.Add($rb)|Out-Null
+
+        # Stats grid
+        $wp = New-Object System.Windows.Controls.WrapPanel; $wp.Orientation = "Horizontal"
+        $wp.Children.Add((New-StatCell "DPI"        $p.DPI.ToString()))|Out-Null
+        $wp.Children.Add((New-StatCell "Sens"       $p.Sens.ToString()))|Out-Null
+        $wp.Children.Add((New-StatCell "eDPI"       $p.eDPI.ToString()))|Out-Null
+        $wp.Children.Add((New-StatCell "Resolution" $p.Res))|Out-Null
+        $wp.Children.Add((New-StatCell "Aspect"     $p.Aspect))|Out-Null
+        $wp.Children.Add((New-StatCell "Refresh"    "$($p.Hz)Hz"))|Out-Null
+        $left.Children.Add($wp)|Out-Null
+
+        # Mouse line
+        $mt = New-Object System.Windows.Controls.TextBlock
+        $mt.Text = "Mouse: $($p.Mouse)"
+        $mt.FontFamily = New-Object System.Windows.Media.FontFamily("Segoe UI")
+        $mt.FontSize = 11
+        $mt.Foreground = [System.Windows.Media.SolidColorBrush][System.Windows.Media.ColorConverter]::ConvertFromString("#222")
+        $mt.Margin = [System.Windows.Thickness]::new(0,2,0,0)
+        $left.Children.Add($mt)|Out-Null
+
+        # Right: source label
+        $right = New-Object System.Windows.Controls.StackPanel; $right.VerticalAlignment = "Top"
+        [System.Windows.Controls.Grid]::SetColumn($right,1)
+        $sb = New-Object System.Windows.Controls.Border
+        $sb.Background = [System.Windows.Media.SolidColorBrush][System.Windows.Media.ColorConverter]::ConvertFromString("#080808")
+        $sb.BorderBrush = [System.Windows.Media.SolidColorBrush][System.Windows.Media.ColorConverter]::ConvertFromString("#111")
+        $sb.BorderThickness = [System.Windows.Thickness]::new(1)
+        $sb.CornerRadius = New-Object System.Windows.CornerRadius(6)
+        $sb.Padding = [System.Windows.Thickness]::new(8,4,8,4)
+        $st = New-Object System.Windows.Controls.TextBlock
+        $st.Text = "prosettings.net"
+        $st.FontFamily = New-Object System.Windows.Media.FontFamily("Segoe UI")
+        $st.FontSize = 9
+        $st.Foreground = [System.Windows.Media.SolidColorBrush][System.Windows.Media.ColorConverter]::ConvertFromString("#1c1c1c")
+        $sb.Child = $st; $right.Children.Add($sb)|Out-Null
+
+        $outer.Children.Add($left)|Out-Null; $outer.Children.Add($right)|Out-Null
+        $card.Child = $outer; $pl.Children.Add($card)|Out-Null
+    }
+}
+
+# ══════════════════════════════════════════════════════════════
+#  APPLY LOG
+# ══════════════════════════════════════════════════════════════
+
+function Append-Log($msg, $col="#282828") {
+    $run = New-Object System.Windows.Documents.Run("$msg`n")
+    $run.Foreground = [System.Windows.Media.SolidColorBrush][System.Windows.Media.ColorConverter]::ConvertFromString($col)
+    $LogText.Inlines.Add($run); $LogScroll.ScrollToEnd()
+}
+
+# ══════════════════════════════════════════════════════════════
+#  EVENTS — WINDOW CHROME
+# ══════════════════════════════════════════════════════════════
+
+(gn "TitleBar").Add_MouseLeftButtonDown({ $Window.DragMove() })
+(gn "BtnMin").Add_Click({ $Window.WindowState = "Minimized" })
+(gn "BtnClose").Add_Click({ $Window.Close() })
+
+# ══════════════════════════════════════════════════════════════
+#  EVENTS — SIDEBAR NAV
+# ══════════════════════════════════════════════════════════════
+
+(gn "NavOpt").Add_Click({
+    Set-NavActive (gn "NavOpt")
+    Show-Page $PgOptHome "Optimizations"
+    Update-ApplyBar
+})
+(gn "NavPro").Add_Click({
+    Set-NavActive (gn "NavPro")
+    Show-Page $PgProGames "Pro Settings"
+    $ApplyBar.Visibility = "Collapsed"
+})
+(gn "NavSettings").Add_Click({
+    Set-NavActive (gn "NavSettings")
+    Show-Page $PgSettings "Settings"
+    $ApplyBar.Visibility = "Collapsed"
+})
+
+# ══════════════════════════════════════════════════════════════
+#  EVENTS — OPTIMIZATIONS
+# ══════════════════════════════════════════════════════════════
+
+(gn "BtnDelay").Add_Click({   Show-Page $PgDelay   "Delay" })
+(gn "BtnDebloat").Add_Click({ Show-Page $PgDebloat "Debloat" })
+(gn "BtnGame").Add_Click({    Show-Page $PgGameOpt "Game Mode" })
+
+(gn "DelayAll").Add_Click({   Set-Bulk "Delay"   $true })
+(gn "DelayRec").Add_Click({   Set-Bulk "Delay"   $true -RecOnly })
+(gn "DelayClear").Add_Click({ Set-Bulk "Delay"   $false })
+(gn "DelayBack").Add_Click({  Show-Page $PgOptHome "Optimizations"; Update-ApplyBar })
+
+(gn "DebloatAll").Add_Click({   Set-Bulk "Debloat" $true })
+(gn "DebloatRec").Add_Click({   Set-Bulk "Debloat" $true -RecOnly })
+(gn "DebloatClear").Add_Click({ Set-Bulk "Debloat" $false })
+(gn "DebloatBack").Add_Click({  Show-Page $PgOptHome "Optimizations"; Update-ApplyBar })
+
+(gn "GameAll").Add_Click({   Set-Bulk "Game" $true })
+(gn "GameRec").Add_Click({   Set-Bulk "Game" $true -RecOnly })
+(gn "GameClear").Add_Click({ Set-Bulk "Game" $false })
+(gn "GameBack").Add_Click({  Show-Page $PgOptHome "Optimizations"; Update-ApplyBar })
+
+(gn "BtnRestore").Add_Click({
+    $r = [System.Windows.MessageBox]::Show("Create a Windows restore point named 'Wrath Backup'?",
+         "Wrath","YesNo","Question")
+    if ($r -eq "Yes") {
+        try {
+            Checkpoint-Computer -Description "Wrath Backup" -RestorePointType MODIFY_SETTINGS -EA Stop
+            [System.Windows.MessageBox]::Show("Restore point created.","Wrath","OK","Information")
+        } catch {
+            [System.Windows.MessageBox]::Show("Could not create restore point. Ensure System Restore is enabled.","Wrath","OK","Warning")
+        }
+    }
+})
+
+# ══════════════════════════════════════════════════════════════
+#  EVENTS — PRO SETTINGS
+# ══════════════════════════════════════════════════════════════
+
+(gn "BtnBackGames").Add_Click({ Show-Page $PgProGames "Pro Settings" })
+
+# ══════════════════════════════════════════════════════════════
+#  EVENTS — APP SETTINGS
+# ══════════════════════════════════════════════════════════════
+
+(gn "StgRestore").Add_Click({
+    try {
+        Checkpoint-Computer -Description "Wrath Backup" -RestorePointType MODIFY_SETTINGS -EA Stop
+        [System.Windows.MessageBox]::Show("Restore point created successfully.","Wrath","OK","Information")
+    } catch {
+        [System.Windows.MessageBox]::Show("Could not create restore point.","Wrath","OK","Warning")
+    }
+})
+
+(gn "StgClearAll").Add_Click({
+    foreach ($k in "Delay","Debloat","Game") { Set-Bulk $k $false }
+})
+
+# ══════════════════════════════════════════════════════════════
+#  EVENTS — APPLY
+# ══════════════════════════════════════════════════════════════
+
+(gn "BtnApply").Add_Click({
+    $sel = $Script:Checks | Where-Object { $_.Tag.Checked }
+    if ($sel.Count -eq 0) { return }
+    Show-Page $PgLog "Applying"
+    $ApplyBar.Visibility = "Collapsed"
+    $LogText.Inlines.Clear(); $LogDone.Visibility = "Collapsed"
+    $LogStatus.Text = "Applying $($sel.Count) tweak$(if($sel.Count -ne 1){'s'})..."
+
+    $Window.Dispatcher.InvokeAsync({
+        Append-Log "  Creating restore point..." "#202020"
+        try {
+            Checkpoint-Computer -Description "Wrath Backup" -RestorePointType MODIFY_SETTINGS -EA Stop
+            Append-Log "  Restore point created." "#164a28"
+        } catch {
+            Append-Log "  Restore point skipped (System Restore may be off)." "#3a2010"
+        }
+        Append-Log ""
+        $done = 0
+        foreach ($row in $sel) {
+            $tw = $row.Tag.Tweak
+            $LogStatus.Text = $tw.Name
+            Append-Log "  $($tw.Name)" "#222"
+            $Window.Dispatcher.Invoke([System.Action]{}, "Background")
+            try { & $tw.Action; Append-Log "  ✓" "#164a28"; $done++ }
+            catch { Append-Log "  ✗ $($_.Exception.Message)" "#3a1010" }
+        }
+        Append-Log ""
+        Append-Log "  $done tweak$(if($done -ne 1){'s'}) applied. Restart to activate all changes." "#4a2888"
+        $LogStatus.Text = "Complete — restart your PC."
+        $LogDone.Visibility = "Visible"
+    }, [System.Windows.Threading.DispatcherPriority]::Background) | Out-Null
+})
+
+$LogDone.Add_Click({
+    Show-Page $PgOptHome "Optimizations"
+    Set-NavActive (gn "NavOpt")
+})
+
+# ══════════════════════════════════════════════════════════════
+#  LAUNCH
+# ══════════════════════════════════════════════════════════════
+
+Set-NavActive (gn "NavOpt")
+$Window.ShowDialog() | Out-Null
