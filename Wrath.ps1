@@ -324,7 +324,7 @@ Add-Type -AssemblyName WindowsBase
           <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
             <Button x:Name="BtnToggleSidebar" Style="{StaticResource Chrome}" Margin="0,0,10,0"
                     ToolTip="Toggle sidebar">
-              <TextBlock FontFamily="Segoe UI" FontSize="14" Text="&#x2630;" Foreground="#3a3a3a"/>
+              <TextBlock x:Name="SidebarArrow" FontFamily="Segoe UI" FontSize="13" Text="&#x276E;" Foreground="#3a3a3a"/>
             </Button>
             <TextBlock x:Name="PageTitle" Text="Optimizations"
                        FontFamily="Segoe UI" FontSize="13" FontWeight="SemiBold"
@@ -1025,7 +1025,7 @@ function New-Row($tw) {
     # Badge
     $bc = $bm[$tw.Badge]
     $bdg = New-Object System.Windows.Controls.Border
-    $bdg.CornerRadius = New-Object System.Windows.CornerRadius(999)
+    $bdg.CornerRadius = New-Object System.Windows.CornerRadius(6)
     $bdg.Padding = [System.Windows.Thickness]::new(8,2,8,2)
     $bdg.VerticalAlignment = "Center"; $bdg.Margin = [System.Windows.Thickness]::new(12,0,0,0)
     $bdg.Background = [System.Windows.Media.SolidColorBrush][System.Windows.Media.ColorConverter]::ConvertFromString($bc.Bg)
@@ -1222,7 +1222,7 @@ function Load-Players($game) {
 
         # Role pill
         $rb = New-Object System.Windows.Controls.Border
-        $rb.CornerRadius = New-Object System.Windows.CornerRadius(999)
+        $rb.CornerRadius = New-Object System.Windows.CornerRadius(6)
         $rb.Padding = [System.Windows.Thickness]::new(8,2,8,2)
         $rb.Background = [System.Windows.Media.SolidColorBrush][System.Windows.Media.ColorConverter]::ConvertFromString("#100820")
         $rb.BorderBrush = [System.Windows.Media.SolidColorBrush][System.Windows.Media.ColorConverter]::ConvertFromString("#221540")
@@ -1457,7 +1457,15 @@ function Toggle-Sidebar {
     $timer.Start()
 }
 
-(gn "BtnToggleSidebar").Add_Click({ Toggle-Sidebar })
+$SidebarArrow = gn "SidebarArrow"
+(gn "BtnToggleSidebar").Add_Click({
+    Toggle-Sidebar
+    if ($script:SidebarOpen) {
+        $SidebarArrow.Text = [char]0x276E  # ❮ left = sidebar is open, click to close
+    } else {
+        $SidebarArrow.Text = [char]0x276F  # ❯ right = sidebar is closed, click to open
+    }
+})
 
 # ══════════════════════════════════════════════════════════════
 #  EVENTS — SIDEBAR NAV
