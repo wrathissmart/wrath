@@ -524,7 +524,7 @@ Add-Type -AssemblyName WindowsBase
 
               <!-- RESTORE POINT -->
               <TextBlock Text="SYSTEM" FontFamily="Segoe UI" FontSize="9" FontWeight="SemiBold"
-                         Foreground="#1e1e1e" Margin="0,0,0,10" LetterSpacing="2"/>
+                         Foreground="#1e1e1e" Margin="0,0,0,10"/>
               <Border Background="#0c0c0c" BorderBrush="#161616" BorderThickness="1"
                       CornerRadius="10" Padding="20,16" Margin="0,0,0,6">
                 <Grid>
@@ -543,7 +543,7 @@ Add-Type -AssemblyName WindowsBase
 
               <!-- ABOUT -->
               <TextBlock Text="ABOUT" FontFamily="Segoe UI" FontSize="9" FontWeight="SemiBold"
-                         Foreground="#1e1e1e" Margin="0,20,0,10" LetterSpacing="2"/>
+                         Foreground="#1e1e1e" Margin="0,20,0,10"/>
               <Border Background="#0c0c0c" BorderBrush="#161616" BorderThickness="1"
                       CornerRadius="10" Padding="20,16" Margin="0,0,0,6">
                 <StackPanel>
@@ -557,7 +557,7 @@ Add-Type -AssemblyName WindowsBase
 
               <!-- DANGER ZONE -->
               <TextBlock Text="DANGER ZONE" FontFamily="Segoe UI" FontSize="9" FontWeight="SemiBold"
-                         Foreground="#1e1e1e" Margin="0,20,0,10" LetterSpacing="2"/>
+                         Foreground="#1e1e1e" Margin="0,20,0,10"/>
               <Border Background="#0c0c0c" BorderBrush="#1a0e0e" BorderThickness="1"
                       CornerRadius="10" Padding="20,16" Margin="0,0,0,6">
                 <Grid>
