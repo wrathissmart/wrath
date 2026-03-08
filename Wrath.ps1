@@ -316,15 +316,6 @@ Add-Type -AssemblyName WindowsBase
             </Button>
           </StackPanel>
 
-          <!-- Collapse arrow -->
-          <Border DockPanel.Dock="Bottom" Padding="10,6,10,6">
-            <Button x:Name="BtnToggleSidebar" Style="{StaticResource Nav}"
-                    HorizontalContentAlignment="Right" Padding="10,8">
-              <TextBlock x:Name="SidebarArrow" Text="&#x276E;"
-                         FontFamily="Segoe UI" FontSize="12" Foreground="#2a2a2a"/>
-            </Button>
-          </Border>
-
           <!-- Bottom watermark -->
           <Border DockPanel.Dock="Bottom" Padding="20,10">
             <TextBlock Text="prosettings.net data" FontFamily="Segoe UI"
@@ -339,9 +330,30 @@ Add-Type -AssemblyName WindowsBase
               Background="Transparent" CornerRadius="0,14,0,0" Padding="10,0,14,0">
         <Grid VerticalAlignment="Center">
           <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+            <Button x:Name="BtnToggleSidebar"
+                    Width="32" Height="32" Padding="0"
+                    Background="Transparent" BorderThickness="0"
+                    Cursor="Hand" Margin="0,0,10,0" VerticalAlignment="Center">
+              <Button.Template>
+                <ControlTemplate TargetType="Button">
+                  <Border x:Name="TgBd" Background="Transparent" CornerRadius="8">
+                    <TextBlock x:Name="SidebarArrow" Text="&#x276E;"
+                               FontFamily="Segoe UI" FontSize="14" FontWeight="Bold"
+                               Foreground="#555566" HorizontalAlignment="Center"
+                               VerticalAlignment="Center"/>
+                  </Border>
+                  <ControlTemplate.Triggers>
+                    <Trigger Property="IsMouseOver" Value="True">
+                      <Setter TargetName="TgBd" Property="Background" Value="#111118"/>
+                      <Setter TargetName="SidebarArrow" Property="Foreground" Value="#8b5cf6"/>
+                    </Trigger>
+                  </ControlTemplate.Triggers>
+                </ControlTemplate>
+              </Button.Template>
+            </Button>
             <TextBlock x:Name="PageTitle" Text="Optimizations"
                        FontFamily="Segoe UI" FontSize="13" FontWeight="SemiBold"
-                       Foreground="#222" VerticalAlignment="Center"/>
+                       Foreground="#555566" VerticalAlignment="Center"/>
           </StackPanel>
           <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
             <Button x:Name="BtnMin"   Content="&#x2212;" Style="{StaticResource Chrome}" Margin="0,0,4,0"/>
@@ -1434,27 +1446,31 @@ function Append-Log($msg, $col="#282828") {
 # ══════════════════════════════════════════════════════════════
 
 # ── Subtle purple glow on hover via PS events (XAML effects unsupported in triggers) ──
-function Add-Glow($btn, [string]$color="#8b5cf6", [double]$blur=14, [double]$opacity=0.28) {
-    $glowOn  = New-Object System.Windows.Media.Effects.DropShadowEffect
-    $glowOn.Color      = [System.Windows.Media.ColorConverter]::ConvertFromString($color)
-    $glowOn.BlurRadius = $blur
-    $glowOn.ShadowDepth = 0
-    $glowOn.Opacity    = $opacity
-    $btn.Add_MouseEnter({ param($s,$e) $s.Effect = $glowOn })
-    $btn.Add_MouseLeave({ param($s,$e) $s.Effect = $null })
+function Add-Glow {
+    param($btn, [string]$color="#8b5cf6", [double]$blur=16, [double]$opacity=0.45)
+    if (-not $btn) { return }
+    # Build effect inside a scriptblock with GetNewClosure to capture per-call
+    $eff = New-Object System.Windows.Media.Effects.DropShadowEffect
+    $eff.Color       = [System.Windows.Media.ColorConverter]::ConvertFromString($color)
+    $eff.BlurRadius  = $blur
+    $eff.ShadowDepth = 0
+    $eff.Opacity     = $opacity
+    $enter = { param($s,$e); $s.Effect = $eff }.GetNewClosure()
+    $leave = { param($s,$e); $s.Effect = $null }
+    $btn.Add_MouseEnter($enter)
+    $btn.Add_MouseLeave($leave)
 }
 
-# Apply glow to all chrome-style action buttons
+# Purple glow — all action buttons
 foreach ($bname in @("BtnDelay","BtnDebloat","BtnGame","BtnRestore",
                      "DelayAll","DelayRec","DelayClear","DelayBack",
                      "DebloatAll","DebloatRec","DebloatClear","DebloatBack",
                      "GameAll","GameRec","GameClear","GameBack",
-                     "BtnApply","StgRestore","StgClearAll")) {
-    $b = gn $bname
-    if ($b) { Add-Glow $b }
+                     "BtnApply","StgRestore")) {
+    Add-Glow (gn $bname)
 }
-# Red glow for danger buttons
-$dstg = gn "StgClearAll"; if ($dstg) { Add-Glow $dstg "#e05050" 12 0.25 }
+# Red glow — danger button
+Add-Glow (gn "StgClearAll") "#e05050" 14 0.4
 
 (gn "TitleBar").Add_MouseLeftButtonDown({ $Window.DragMove() })
 (gn "BtnMin").Add_Click({ $Window.WindowState = "Minimized" })
@@ -1499,11 +1515,9 @@ function Toggle-Sidebar {
 $SidebarArrow = gn "SidebarArrow"
 (gn "BtnToggleSidebar").Add_Click({
     Toggle-Sidebar
-    if ($script:SidebarOpen) {
-        $SidebarArrow.Text = [char]0x276E  # ❮ left = sidebar is open, click to close
-    } else {
-        $SidebarArrow.Text = [char]0x276F  # ❯ right = sidebar is closed, click to open
-    }
+    # Arrow points left (❮) when sidebar open (click to close),
+    # points right (❯) when sidebar closed (click to open)
+    $SidebarArrow.Text = if ($script:SidebarOpen) { [char]0x276E } else { [char]0x276F }
 })
 
 # ══════════════════════════════════════════════════════════════
