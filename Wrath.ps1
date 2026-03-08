@@ -38,7 +38,7 @@ Add-Type -AssemblyName WindowsBase
         <Setter.Value>
           <ControlTemplate TargetType="Button">
             <Border x:Name="Bd" Background="{TemplateBinding Background}"
-                    CornerRadius="999" Padding="{TemplateBinding Padding}">
+                    CornerRadius="10" Padding="{TemplateBinding Padding}">
               <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
             </Border>
             <ControlTemplate.Triggers>
@@ -68,7 +68,7 @@ Add-Type -AssemblyName WindowsBase
           <ControlTemplate TargetType="Button">
             <Border x:Name="Bd" Background="Transparent"
                     BorderBrush="#202020" BorderThickness="1"
-                    CornerRadius="999" Padding="{TemplateBinding Padding}">
+                    CornerRadius="10" Padding="{TemplateBinding Padding}">
               <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
             </Border>
             <ControlTemplate.Triggers>
@@ -96,7 +96,7 @@ Add-Type -AssemblyName WindowsBase
           <ControlTemplate TargetType="Button">
             <Border x:Name="Bd" Background="Transparent"
                     BorderBrush="#1c1c1c" BorderThickness="1"
-                    CornerRadius="999" Padding="{TemplateBinding Padding}">
+                    CornerRadius="10" Padding="{TemplateBinding Padding}">
               <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
             </Border>
             <ControlTemplate.Triggers>
@@ -219,7 +219,7 @@ Add-Type -AssemblyName WindowsBase
           <ControlTemplate TargetType="Button">
             <Border x:Name="Bd" Background="{TemplateBinding Background}"
                     BorderBrush="#3d1515" BorderThickness="1"
-                    CornerRadius="999" Padding="{TemplateBinding Padding}">
+                    CornerRadius="10" Padding="{TemplateBinding Padding}">
               <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
             </Border>
             <ControlTemplate.Triggers>
@@ -1248,24 +1248,152 @@ function Load-Players($game) {
         $mt.Margin = [System.Windows.Thickness]::new(0,2,0,0)
         $left.Children.Add($mt)|Out-Null
 
-        # Right: source label
-        $right = New-Object System.Windows.Controls.StackPanel; $right.VerticalAlignment = "Top"
+        # Right: source + Apply button
+        $right = New-Object System.Windows.Controls.StackPanel
+        $right.VerticalAlignment = "Top"
+        $right.Margin = [System.Windows.Thickness]::new(16,0,0,0)
         [System.Windows.Controls.Grid]::SetColumn($right,1)
+
+        # Source badge
         $sb = New-Object System.Windows.Controls.Border
         $sb.Background = [System.Windows.Media.SolidColorBrush][System.Windows.Media.ColorConverter]::ConvertFromString("#080808")
         $sb.BorderBrush = [System.Windows.Media.SolidColorBrush][System.Windows.Media.ColorConverter]::ConvertFromString("#111")
         $sb.BorderThickness = [System.Windows.Thickness]::new(1)
         $sb.CornerRadius = New-Object System.Windows.CornerRadius(6)
         $sb.Padding = [System.Windows.Thickness]::new(8,4,8,4)
+        $sb.HorizontalAlignment = "Right"
         $st = New-Object System.Windows.Controls.TextBlock
         $st.Text = "prosettings.net"
         $st.FontFamily = New-Object System.Windows.Media.FontFamily("Segoe UI")
         $st.FontSize = 9
         $st.Foreground = [System.Windows.Media.SolidColorBrush][System.Windows.Media.ColorConverter]::ConvertFromString("#1c1c1c")
-        $sb.Child = $st; $right.Children.Add($sb)|Out-Null
+        $sb.Child = $st
+        $right.Children.Add($sb)|Out-Null
+
+        # Apply Settings button
+        $applyBtn = New-Object System.Windows.Controls.Button
+        $applyBtn.Content = "Apply Settings"
+        $applyBtn.FontFamily = New-Object System.Windows.Media.FontFamily("Segoe UI")
+        $applyBtn.FontSize = 11
+        $applyBtn.FontWeight = [System.Windows.FontWeights]::SemiBold
+        $applyBtn.Cursor = [System.Windows.Input.Cursors]::Hand
+        $applyBtn.Margin = [System.Windows.Thickness]::new(0,10,0,0)
+        $applyBtn.Padding = [System.Windows.Thickness]::new(14,8,14,8)
+        $applyBtn.BorderThickness = [System.Windows.Thickness]::new(0)
+        $applyBtn.Background = [System.Windows.Media.SolidColorBrush][System.Windows.Media.ColorConverter]::ConvertFromString("#8b5cf6")
+        $applyBtn.Foreground = [System.Windows.Media.Brushes]::White
+        $applyBtn.Tag = $p
+
+        [xml]$applyXaml = @'
+<ControlTemplate xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                 TargetType="Button">
+  <Border x:Name="Bd" Background="{TemplateBinding Background}"
+          CornerRadius="10" Padding="{TemplateBinding Padding}">
+    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+  </Border>
+  <ControlTemplate.Triggers>
+    <Trigger Property="IsMouseOver" Value="True">
+      <Setter TargetName="Bd" Property="Background" Value="#a78bfa"/>
+    </Trigger>
+    <Trigger Property="IsPressed" Value="True">
+      <Setter TargetName="Bd" Property="Background" Value="#7c3aed"/>
+    </Trigger>
+  </ControlTemplate.Triggers>
+</ControlTemplate>
+'@
+        $applyBtn.Template = [System.Windows.Markup.XamlReader]::Load((New-Object System.Xml.XmlNodeReader $applyXaml))
+
+        $applyBtn.Add_Click({
+            param($s,$e)
+            Apply-ProSettings $s.Tag
+        })
+        $right.Children.Add($applyBtn)|Out-Null
 
         $outer.Children.Add($left)|Out-Null; $outer.Children.Add($right)|Out-Null
         $card.Child = $outer; $pl.Children.Add($card)|Out-Null
+    }
+}
+
+# ══════════════════════════════════════════════════════════════
+#  APPLY PRO SETTINGS
+# ══════════════════════════════════════════════════════════════
+
+function Apply-ProSettings($p) {
+    $name = $p.Name
+    $confirm = [System.Windows.MessageBox]::Show(
+        "Apply $name's settings?`n`nThis will set:`n  DPI: $($p.DPI)`n  Sensitivity: $($p.Sens)`n  Resolution: $($p.Res)`n  Refresh Rate: $($p.Hz)Hz`n  Mouse Acceleration: OFF`n`nNote: DPI must be set manually in your mouse software.",
+        "Apply Pro Settings", "YesNo", "Question")
+    if ($confirm -ne "Yes") { return }
+
+    $errors = @()
+
+    # ── Disable Mouse Acceleration (applies to all games) ──
+    try {
+        Set-ItemProperty "HKCU:\Control Panel\Mouse" -Name MouseSpeed -Value 0 -Force
+        Set-ItemProperty "HKCU:\Control Panel\Mouse" -Name MouseThreshold1 -Value 0 -Force
+        Set-ItemProperty "HKCU:\Control Panel\Mouse" -Name MouseThreshold2 -Value 0 -Force
+    } catch { $errors += "Mouse acceleration: $($_.Exception.Message)" }
+
+    # ── Set Resolution via registry (takes effect after sign-out) ──
+    try {
+        $resParts = $p.Res -split "x"
+        if ($resParts.Count -eq 2) {
+            $w = [int]$resParts[0]; $h = [int]$resParts[1]
+            # Write preferred resolution to display registry
+            $devKey = "HKLM:\SYSTEM\CurrentControlSet\Control\GraphicsDrivers\Configuration"
+            # Use DISM/CIM to set resolution
+            $monitors = Get-CimInstance -ClassName Win32_VideoController -EA SilentlyContinue
+            foreach ($mon in $monitors) {
+                $devID = $mon.PNPDeviceID -replace "\", "_"
+                $regPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\VideoSettings"
+                if (!(Test-Path $regPath)) { New-Item $regPath -Force | Out-Null }
+                Set-ItemProperty $regPath -Name "PreferredResWidth" -Value $w -Force -EA SilentlyContinue
+                Set-ItemProperty $regPath -Name "PreferredResHeight" -Value $h -Force -EA SilentlyContinue
+            }
+        }
+    } catch { $errors += "Resolution: $($_.Exception.Message)" }
+
+    # ── Set Refresh Rate ──
+    try {
+        Add-Type -TypeDefinition @"
+using System;
+using System.Runtime.InteropServices;
+public class DisplayHelper {
+    [DllImport("user32.dll")] public static extern bool EnumDisplaySettings(string deviceName, int modeNum, ref DEVMODE devMode);
+    [DllImport("user32.dll")] public static extern int ChangeDisplaySettings(ref DEVMODE devMode, int flags);
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
+    public struct DEVMODE {
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)] public string dmDeviceName;
+        public short dmSpecVersion; public short dmDriverVersion; public short dmSize;
+        public short dmDriverExtra; public int dmFields;
+        public int dmPositionX; public int dmPositionY; public int dmDisplayOrientation;
+        public int dmDisplayFixedOutput; public short dmColor; public short dmDuplex;
+        public short dmYResolution; public short dmTTOption; public short dmCollate;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)] public string dmFormName;
+        public short dmLogPixels; public int dmBitsPerPel;
+        public int dmPelsWidth; public int dmPelsHeight;
+        public int dmDisplayFlags; public int dmDisplayFrequency;
+    }
+}
+"@ -EA SilentlyContinue
+        $dm = New-Object DisplayHelper+DEVMODE
+        $dm.dmSize = [System.Runtime.InteropServices.Marshal]::SizeOf($dm)
+        [DisplayHelper]::EnumDisplaySettings($null, -1, [ref]$dm) | Out-Null
+        $dm.dmDisplayFrequency = $p.Hz
+        $dm.dmFields = 0x400000  # DM_DISPLAYFREQUENCY
+        [DisplayHelper]::ChangeDisplaySettings([ref]$dm, 0) | Out-Null
+    } catch { $errors += "Refresh rate: $($_.Exception.Message)" }
+
+    # ── Result ──
+    if ($errors.Count -eq 0) {
+        [System.Windows.MessageBox]::Show(
+            "Settings applied!`n`nRemember to:`n  • Set DPI to $($p.DPI) in your mouse software`n  • Log out and back in for resolution to take full effect",
+            "Applied — $name", "OK", "Information")
+    } else {
+        $errList = $errors -join "`n"
+        [System.Windows.MessageBox]::Show(
+            "Partially applied. Some settings may need manual adjustment:`n`n$errList`n`nDPI ($($p.DPI)) must always be set in your mouse software.",
+            "Applied with warnings", "OK", "Warning")
     }
 }
 
