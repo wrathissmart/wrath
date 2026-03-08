@@ -34,11 +34,6 @@ Add-Type -AssemblyName WindowsBase
       <Setter Property="Padding"      Value="24,10"/>
       <Setter Property="BorderThickness" Value="0"/>
       <Setter Property="Cursor"       Value="Hand"/>
-      <Setter Property="Effect">
-        <Setter.Value>
-          <DropShadowEffect Color="#8b5cf6" BlurRadius="0" ShadowDepth="0" Opacity="0"/>
-        </Setter.Value>
-      </Setter>
       <Setter Property="Template">
         <Setter.Value>
           <ControlTemplate TargetType="Button">
